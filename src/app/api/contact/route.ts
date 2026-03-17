@@ -2,25 +2,26 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, message } = await request.json();
+    const { chatId, message } = await request.json();
 
     const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-    if (!BOT_TOKEN || !CHAT_ID) {
-      console.error('Telegram credentials missing: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not defined.');
+    if (!BOT_TOKEN) {
+      console.error('Telegram BOT_TOKEN is missing in environment variables.');
       return NextResponse.json(
         { error: 'Server configuration error.' },
         { status: 500 }
       );
     }
 
-    const text = `
-📩 *New Message from Form*
-*Name:* ${name}
-*Email:* ${email}
-*Message:* ${message}
-    `;
+    if (!chatId || !message) {
+      return NextResponse.json(
+        { error: 'Chat ID and message are required.' },
+        { status: 400 }
+      );
+    }
+
+    const text = `📩 *New Message*\n${message}`;
 
     const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
     const response = await fetch(telegramUrl, {
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        chat_id: CHAT_ID,
+        chat_id: chatId,
         text: text,
         parse_mode: 'Markdown',
       }),
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       const errorData = await response.json();
       console.error('Telegram API error:', errorData);
       return NextResponse.json(
-        { error: 'Failed to send message to Telegram.' },
+        { error: 'Failed to send message to Telegram. Check if the Chat ID is correct and the bot is started.' },
         { status: 500 }
       );
     }
