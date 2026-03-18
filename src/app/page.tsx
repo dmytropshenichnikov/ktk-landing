@@ -28,7 +28,7 @@ const initialFormData: FormData = {
 
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
-const heroPoints = ['Щебень, песок, гранодсев, кольца, шлакоблок, цемент', 'Доставка по городу и области', 'Услуги манипулятора'] as const;
+const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок, цемент', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
 
 export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -45,7 +45,7 @@ export default function Home() {
 
     if (!phoneRegex.test(formData.phone.trim())) {
       setStatus('error');
-      setErrorText('Проверьте номер телефона. Разрешены только цифры и символы + ( ) -');
+      setErrorText('Перевірте номер телефону. Дозволені тільки цифри та символи + ( ) -');
       return;
     }
 
@@ -67,7 +67,7 @@ export default function Home() {
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as { error?: string } | null;
         setStatus('error');
-        setErrorText(payload?.error ?? 'Не удалось отправить заявку. Попробуйте еще раз.');
+        setErrorText(payload?.error ?? 'Не вдалося відправити заявку. Спробуйте ще раз.');
         return;
       }
 
@@ -75,7 +75,7 @@ export default function Home() {
       setFormData(initialFormData);
     } catch {
       setStatus('error');
-      setErrorText('Ошибка сети. Проверьте подключение и попробуйте еще раз.');
+      setErrorText("Помилка мережі. Перевірте з'єднання та спробуйте ще раз.");
     }
   };
 
@@ -94,14 +94,14 @@ export default function Home() {
             <a className={styles.brand} href="#hero">
               <span>
                 <strong>{companyName}</strong>
-                <small>Продажа и доставка строительных материалов</small>
+                <small>Продаж і доставка будівельних матеріалів</small>
               </span>
             </a>
 
             <nav className={styles.nav}>
-              <a href="#products">Товары</a>
-              <a href="#services">Услуги</a>
-              <a href="#reviews">Отзывы</a>
+              <a href="#products">Товари</a>
+              <a href="#services">Послуги</a>
+              <a href="#reviews">Відгуки</a>
               <a href="#contact-form">Заявка</a>
             </nav>
 
@@ -115,17 +115,17 @@ export default function Home() {
       <main>
         <section className={styles.hero} id="hero">
           <div className={styles.heroImage}>
-            <Image src="/photos/kamaz-hero.jpg" alt="КамАЗ для доставки строительных материалов" fill priority sizes="100vw" />
+            <Image src="/photos/kamaz-hero.jpg" alt="КамАЗ для доставки будівельних матеріалів" fill priority sizes="100vw" />
           </div>
           <div className={styles.heroShade} />
 
           <div className={styles.container}>
             <div className={styles.heroGrid}>
               <div className={styles.heroContent}>
-                <p className={styles.heroLabel}>Доставка строительных материалов</p>
-                <h1>Простой и понятный сервис по доставке будматериалов</h1>
+                <p className={styles.heroLabel}>Доставка будівельних матеріалів</p>
+                <h1>Простий і зрозумілий сервіс із доставки будматеріалів</h1>
                 <p className={styles.heroText}>
-                  Щебень, песок, гранодсев, кольца колодезные, шлакоблок и цемент с доставкой по городу и области.
+                  Щебінь, пісок, гранодсів, кільця колодязні, шлакоблок і цемент з доставкою по місту та області.
                 </p>
 
                 <div className={styles.heroPhones}>
@@ -146,14 +146,14 @@ export default function Home() {
               </div>
 
               <form className={styles.heroForm} id="contact-form" onSubmit={handleSubmit}>
-                <h2>Оставить заявку</h2>
-                <p>Напишите, что нужно привезти, и мы быстро свяжемся с вами.</p>
+                <h2>Залишити заявку</h2>
+                <p>Напишіть, що потрібно привезти, і ми швидко зв&apos;яжемося з вами.</p>
 
                 <input
                   id="hero-name"
                   name="name"
                   type="text"
-                  placeholder="Ваше имя"
+                  placeholder="Ваше ім'я"
                   value={formData.name}
                   onChange={handleChange}
                   required
@@ -178,16 +178,16 @@ export default function Home() {
                   id="hero-message"
                   name="message"
                   rows={4}
-                  placeholder="Комментарий к заказу"
+                  placeholder="Коментар до замовлення"
                   value={formData.message}
                   onChange={handleChange}
                 />
 
                 <button type="submit" disabled={status === 'sending'}>
-                  {status === 'sending' ? 'Отправляем...' : 'Отправить заявку'}
+                  {status === 'sending' ? 'Відправляємо...' : 'Надіслати заявку'}
                 </button>
 
-                {status === 'success' && <p className={styles.success}>Заявка отправлена. Мы скоро свяжемся с вами.</p>}
+                {status === 'success' && <p className={styles.success}>Заявку відправлено. Ми скоро зв&apos;яжемося з вами.</p>}
                 {status === 'error' && <p className={styles.error}>{errorText}</p>}
               </form>
             </div>
@@ -198,12 +198,12 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.introBox}>
               <div>
-                <p className={styles.sectionLabel}>О компании</p>
-                <h2>Все основные материалы в одном месте</h2>
+                <p className={styles.sectionLabel}>Про компанію</p>
+                <h2>Усі основні матеріали в одному місці</h2>
               </div>
               <p>
-                Без сложной витрины и лишнего дизайна. На сайте собраны основные позиции, услуги доставки и удобные
-                способы связи, чтобы клиенту было просто оставить заявку и быстро получить расчет.
+                Без складної вітрини та зайвого дизайну. На сайті зібрані основні позиції, послуги доставки та зручні
+                способи зв&apos;язку, щоб клієнту було просто залишити заявку й швидко отримати прорахунок.
               </p>
             </div>
           </div>
@@ -212,8 +212,8 @@ export default function Home() {
         <section className={styles.section} id="products">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Товары</p>
-              <h2>Основные позиции</h2>
+              <p className={styles.sectionLabel}>Товари</p>
+              <h2>Основні позиції</h2>
             </div>
 
             <div className={styles.productsGrid}>
@@ -228,7 +228,7 @@ export default function Home() {
                     <p className={styles.productPrice}>{product.priceFrom}</p>
                     <p className={styles.productDescription}>{product.description}</p>
                     <a className={styles.cardLink} href="#contact-form">
-                      Уточнить цену
+                      Уточнити ціну
                     </a>
                   </div>
                 </article>
@@ -240,8 +240,8 @@ export default function Home() {
         <section className={styles.sectionAlt} id="services">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Услуги</p>
-              <h2>Доставка и манипулятор</h2>
+              <p className={styles.sectionLabel}>Послуги</p>
+              <h2>Доставка і маніпулятор</h2>
             </div>
 
             <div className={styles.servicesGrid}>
@@ -255,7 +255,7 @@ export default function Home() {
                     <h3>{service.name}</h3>
                     <p>{service.details}</p>
                     <a className={styles.cardLink} href="#contact-form">
-                      Заказать услугу
+                      Замовити послугу
                     </a>
                   </div>
                 </article>
@@ -267,8 +267,8 @@ export default function Home() {
         <section className={styles.section} id="reviews">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Отзывы</p>
-              <h2>Что говорят клиенты</h2>
+              <p className={styles.sectionLabel}>Відгуки</p>
+              <h2>Що кажуть клієнти</h2>
             </div>
 
             <div className={styles.reviewsGrid}>
@@ -294,8 +294,8 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.contactStripBox}>
               <div>
-                <p className={styles.sectionLabelLight}>Связь</p>
-                <h2>Быстро ответим по телефону, в Viber или Telegram</h2>
+                <p className={styles.sectionLabelLight}>Зв&apos;язок</p>
+                <h2>Швидко відповімо телефоном, у Viber або Telegram</h2>
               </div>
 
               <div className={styles.contactButtons}>
@@ -315,8 +315,8 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.contactsBox}>
               <div>
-                <p className={styles.sectionLabel}>Контакты</p>
-                <h2>Свяжитесь с нами удобным способом</h2>
+                <p className={styles.sectionLabel}>Контакти</p>
+                <h2>Зв&apos;яжіться з нами зручним способом</h2>
               </div>
 
               <div className={styles.contactInfo}>
@@ -325,11 +325,11 @@ export default function Home() {
                   <span>{contacts.phoneDisplay}</span>
                 </p>
                 <p>
-                  <strong>График</strong>
+                  <strong>Графік</strong>
                   <span>{contacts.workingHours}</span>
                 </p>
                 <p>
-                  <strong>Регион доставки</strong>
+                  <strong>Регіон доставки</strong>
                   <span>{contacts.deliveryArea}</span>
                 </p>
               </div>
@@ -341,7 +341,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.container}>
           <p>{companyName}</p>
-          <p>Щебень, песок, гранодсев, кольца, шлакоблок, цемент</p>
+          <p>Щебінь, пісок, гранодсів, кільця, шлакоблок, цемент</p>
         </div>
       </footer>
 
