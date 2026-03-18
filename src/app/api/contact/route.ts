@@ -1,56 +1,75 @@
 import { NextResponse } from 'next/server';
 
+type ContactPayload = {
+  name?: string;
+  phone?: string;
+  product?: string;
+  message?: string;
+};
+
+const phoneRegex = /^[0-9+()\s-]{8,20}$/;
+
+function normalize(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 export async function POST(request: Request) {
   try {
-    const { chatId, message } = await request.json();
+    const body = (await request.json()) as ContactPayload;
 
-    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const name = normalize(body.name);
+    const phone = normalize(body.phone);
+    const product = normalize(body.product);
+    const message = normalize(body.message);
 
-    if (!BOT_TOKEN) {
-      console.error('Telegram BOT_TOKEN is missing in environment variables.');
+    if (!name || !phone) {
+      return NextResponse.json({ error: "Ім'я та телефон обов'язкові." }, { status: 400 });
+    }
+
+    if (!phoneRegex.test(phone)) {
+      return NextResponse.json({ error: 'Невірний формат телефону.' }, { status: 400 });
+    }
+
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+
+    if (!botToken || !chatId) {
+      console.error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in env');
       return NextResponse.json(
-        { error: 'Server configuration error.' },
-        { status: 500 }
+        { error: 'Сервер не налаштований для відправки повідомлень.' },
+        { status: 500 },
       );
     }
 
-    if (!chatId || !message) {
-      return NextResponse.json(
-        { error: 'Chat ID and message are required.' },
-        { status: 400 }
-      );
-    }
+    const textLines = [
+      'Нова заявка з сайту ТОВ "КТК"',
+      `Ім'я: ${name}`,
+      `Телефон: ${phone}`,
+      product ? `Матеріал: ${product}` : 'Матеріал: не вказано',
+      message ? `Коментар: ${message}` : 'Коментар: -',
+      `Час: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
+    ];
 
-    const text = `📩 *New Message*\n${message}`;
-
-    const telegramUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
-    const response = await fetch(telegramUrl, {
+    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         chat_id: chatId,
-        text: text,
-        parse_mode: 'Markdown',
+        text: textLines.join('\n'),
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Telegram API error:', errorData);
-      return NextResponse.json(
-        { error: 'Failed to send message to Telegram. Check if the Chat ID is correct and the bot is started.' },
-        { status: 500 }
-      );
+    if (!telegramResponse.ok) {
+      const error = await telegramResponse.text();
+      console.error('Telegram API error:', error);
+      return NextResponse.json({ error: 'Не вдалося передати заявку в Telegram.' }, { status: 502 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('API Error:', error);
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    console.error('Contact API error:', error);
+    return NextResponse.json({ error: 'Внутрішня помилка сервера.' }, { status: 500 });
   }
 }
