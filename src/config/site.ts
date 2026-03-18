@@ -1,9 +1,9 @@
 export const companyName = 'ТОВ "КТК"';
 
 export const contacts = {
-  phoneDisplay: '+38 (067) 123-45-67',
-  phoneRaw: '+380671234567',
-  viberRaw: '+380671234567',
+  phoneDisplay: '050 304 4777',
+  phoneRaw: '+380503044777',
+  viberRaw: '+380503044777',
   telegramUsername: 'ktk_manager',
   workingHours: 'Пн-Сб: 08:00-18:00',
   deliveryArea: 'Полтава та область',

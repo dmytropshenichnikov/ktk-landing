@@ -12,7 +12,7 @@ export const services: Service[] = [
     name: 'Доставка товарів',
     details: 'Доставляємо матеріали самоскидами 10, 20 і 30 тонн по місту та області.',
     image: '/photos/delivery.jpg',
-    meta: 'Газель, ЗИЛ, КамАЗ',
+    meta: '',
   },
   {
     id: 'manipulator',

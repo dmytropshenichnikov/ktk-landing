@@ -92,6 +92,11 @@
   font-weight: 700;
 }
 
+.topLine .container p:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+
 .hero {
   position: relative;
   overflow: hidden;
@@ -548,11 +553,16 @@
 @media (max-width: 860px) {
   .headerRow {
     grid-template-columns: 1fr;
-    justify-items: start;
+    justify-items: stretch;
   }
 
   .nav {
     justify-content: flex-start;
+  }
+
+  .headerContacts {
+    display: flex;
+    justify-content: center;
   }
 
   .servicesGrid,
@@ -567,8 +577,8 @@
   }
 
   .topLine .container {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
   }
 
   .productsGrid,
@@ -599,6 +609,10 @@
   .contactButtons a,
   .cardLink {
     width: 100%;
+  }
+
+  .headerContacts a {
+    min-width: min(100%, 280px);
   }
 
   .mobileDock {

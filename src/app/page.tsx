@@ -28,7 +28,7 @@ const initialFormData: FormData = {
 
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
-const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок, цемент', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
+const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
 
 export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -125,7 +125,7 @@ export default function Home() {
                 <p className={styles.heroLabel}>Доставка будівельних матеріалів</p>
                 <h1>Простий і зрозумілий сервіс із доставки будматеріалів</h1>
                 <p className={styles.heroText}>
-                  Щебінь, пісок, гранодсів, кільця колодязні, шлакоблок і цемент з доставкою по місту та області.
+                  Щебінь, пісок, гранодсів, кільця колодязні та шлакоблок з доставкою по місту та області.
                 </p>
 
                 <div className={styles.heroPhones}>
@@ -251,7 +251,7 @@ export default function Home() {
                     <Image src={service.image} alt={service.name} fill sizes="(max-width: 900px) 100vw, 50vw" />
                   </div>
                   <div className={styles.serviceBody}>
-                    <p className={styles.serviceMeta}>{service.meta}</p>
+                    {service.meta ? <p className={styles.serviceMeta}>{service.meta}</p> : null}
                     <h3>{service.name}</h3>
                     <p>{service.details}</p>
                     <a className={styles.cardLink} href="#contact-form">
@@ -341,7 +341,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.container}>
           <p>{companyName}</p>
-          <p>Щебінь, пісок, гранодсів, кільця, шлакоблок, цемент</p>
+          <p>Щебінь, пісок, гранодсів, кільця, шлакоблок</p>
         </div>
       </footer>
 
