@@ -1,4 +1,4 @@
-# TOV "KTK" Landing
+# TOV "KTK" Landing page with telegram notifications
 
 Лендінг на Next.js + TypeScript для продажу щебеню та сипучих матеріалів.
 
