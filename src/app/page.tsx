@@ -123,7 +123,7 @@ export default function Home() {
             <div className={styles.heroGrid}>
               <div className={styles.heroContent}>
                 <p className={styles.heroLabel}>Доставка будівельних матеріалів</p>
-                <h1>Простий і зрозумілий сервіс із доставки будматеріалів</h1>
+                <h1>Сервіс із професійною доставкою будматеріалів</h1>
                 <p className={styles.heroText}>
                   Щебінь, пісок, гранодсів, кільця колодязні та шлакоблок з доставкою по місту та області.
                 </p>
@@ -194,21 +194,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className={styles.section}>
-          <div className={styles.container}>
-            <div className={styles.introBox}>
-              <div>
-                <p className={styles.sectionLabel}>Про компанію</p>
-                <h2>Усі основні матеріали в одному місці</h2>
-              </div>
-              <p>
-                Без складної вітрини та зайвого дизайну. На сайті зібрані основні позиції, послуги доставки та зручні
-                способи зв&apos;язку, щоб клієнту було просто залишити заявку й швидко отримати прорахунок.
-              </p>
-            </div>
-          </div>
-        </section>
-
         <section className={styles.section} id="products">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
@@ -258,32 +243,6 @@ export default function Home() {
                       Замовити послугу
                     </a>
                   </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.section} id="reviews">
-          <div className={styles.container}>
-            <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Відгуки</p>
-              <h2>Що кажуть клієнти</h2>
-            </div>
-
-            <div className={styles.reviewsGrid}>
-              {reviews.map((review) => (
-                <article key={review.name} className={styles.reviewCard}>
-                  <div className={styles.reviewHead}>
-                    <div className={styles.reviewAvatar}>
-                      <Image src={review.image} alt={review.name} fill sizes="80px" />
-                    </div>
-                    <div>
-                      <h3>{review.name}</h3>
-                      <p>{review.role}</p>
-                    </div>
-                  </div>
-                  <p className={styles.reviewText}>{review.text}</p>
                 </article>
               ))}
             </div>
