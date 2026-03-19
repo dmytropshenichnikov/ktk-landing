@@ -42,12 +42,12 @@ export async function POST(request: Request) {
     }
 
     const textLines = [
-      'Нова заявка з сайту ТОВ "КТК"',
-      `Ім'я: ${name}`,
-      `Телефон: ${phone}`,
-      product ? `Матеріал: ${product}` : 'Матеріал: не вказано',
-      message ? `Коментар: ${message}` : 'Коментар: -',
-      `Час: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
+      '<b>Нова заявка з сайту ТОВ "КТК"</b>',
+      `<b>Ім'я: ${name}</b>`,
+      `<b>Телефон: ${phone}</b>`,
+      product ? `<b>Матеріал: ${product}</b>` : '<b>Матеріал: не вказано</b>',
+      message ? `<b>Коментар: ${message}</b>` : '<b>Коментар: -</b>',
+      `<b>Час: ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}</b>`,
     ];
 
     const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {

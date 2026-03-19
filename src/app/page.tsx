@@ -5,7 +5,6 @@ import { ChangeEvent, FormEvent, useState } from 'react';
 
 import { companyName, contacts, socialLinks } from '@/config/site';
 import { products } from '@/data/products';
-import { reviews } from '@/data/reviews';
 import { services } from '@/data/services';
 
 import styles from './page.module.css';
