@@ -58,6 +58,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         chat_id: chatId,
         text: textLines.join('\n'),
+        parse_mode: 'HTML'
       }),
     });
 
