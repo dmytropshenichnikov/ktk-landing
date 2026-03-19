@@ -132,8 +132,8 @@ export default function Home() {
                   <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                     Viber
                   </a>
-                  <a href={socialLinks.telegram} target="_blank" rel="noreferrer">
-                    Telegram
+                  <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                    WhatsApp
                   </a>
                 </div>
 
@@ -253,7 +253,7 @@ export default function Home() {
             <div className={styles.contactStripBox}>
               <div>
                 <p className={styles.sectionLabelLight}>Зв&apos;язок</p>
-                <h2>Швидко відповімо телефоном, у Viber або Telegram</h2>
+                <h2>Швидко відповімо телефоном, у Viber або WhatsApp</h2>
               </div>
 
               <div className={styles.contactButtons}>
@@ -261,8 +261,8 @@ export default function Home() {
                 <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                   Viber
                 </a>
-                <a href={socialLinks.telegram} target="_blank" rel="noreferrer">
-                  Telegram
+                <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                  WhatsApp
                 </a>
               </div>
             </div>
@@ -308,8 +308,8 @@ export default function Home() {
         <a href={socialLinks.viber} target="_blank" rel="noreferrer">
           Viber
         </a>
-        <a href={socialLinks.telegram} target="_blank" rel="noreferrer">
-          Telegram
+        <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+          WhatsApp
         </a>
       </div>
     </div>
