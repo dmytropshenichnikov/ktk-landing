@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 type ContactPayload = {
   name?: string;
   phone?: string;
+  email?: string;
   product?: string;
   message?: string;
 };
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
 
     const name = normalize(body.name);
     const phone = normalize(body.phone);
+    const email = normalize(body.email);
     const product = normalize(body.product);
     const message = normalize(body.message);
 
@@ -45,6 +47,7 @@ export async function POST(request: Request) {
       '<b>Нова заявка з сайту ТОВ "КТК"</b>',
       `<b>Ім'я:</b> ${name}`,
       `<b>Телефон:</b> ${phone}`,
+      email ? `<b>Email:</b> ${email}` : '<b>Email: не вказано</b>',
       product ? `<b>Матеріал:</b> ${product}` : '<b>Матеріал: не вказано</b>',
       message ? `<b>Коментар:</b> ${message}` : '<b>Коментар: -</b>',
       `<b>Час:</b> ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { ChangeEvent, FormEvent, useState } from 'react';
+import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
 
 import { companyName, contacts, socialLinks } from '@/config/site';
 import { products } from '@/data/products';
@@ -13,6 +13,7 @@ import { reviews } from '@/data/reviews';
 type FormData = {
   name: string;
   phone: string;
+  email: string;
   product: string;
   message: string;
 };
@@ -22,6 +23,7 @@ type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 const initialFormData: FormData = {
   name: '',
   phone: '',
+  email: '',
   product: products[0] ? `${products[0].name} (${products[0].spec})` : '',
   message: '',
 };
@@ -34,6 +36,23 @@ export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
+
+  useEffect(() => {
+    if (status === 'success') {
+      const gapi = (window as any).gapi;
+      if (gapi) {
+        gapi.load('surveyoptin', function() {
+          gapi.surveyoptin.render({
+            "merchant_id": 5698959504,
+            "order_id": `ORDER_${Date.now()}`,
+            "email": formData.email || "customer@example.com",
+            "delivery_country": "UA",
+            "estimated_delivery_date": new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          });
+        });
+      }
+    }
+  }, [status, formData.email]);
 
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
@@ -59,6 +78,7 @@ export default function Home() {
         body: JSON.stringify({
           name: formData.name.trim(),
           phone: formData.phone.trim(),
+          email: formData.email.trim(),
           product: formData.product,
           message: formData.message.trim(),
         }),
@@ -72,7 +92,8 @@ export default function Home() {
       }
 
       setStatus('success');
-      setFormData(initialFormData);
+      // Note: we don't clear formData here immediately to allow useEffect to use the email
+      // We could clear it after a short delay or in the effect
     } catch {
       setStatus('error');
       setErrorText("Помилка мережі. Перевірте з'єднання та спробуйте ще раз.");
@@ -164,6 +185,15 @@ export default function Home() {
                   type="tel"
                   placeholder="+380..."
                   value={formData.phone}
+                  onChange={handleChange}
+                  required
+                />
+                <input
+                  id="hero-email"
+                  name="email"
+                  type="email"
+                  placeholder="Email (для відгуку Google)"
+                  value={formData.email}
                   onChange={handleChange}
                   required
                 />
