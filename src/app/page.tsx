@@ -8,6 +8,7 @@ import { products } from '@/data/products';
 import { services } from '@/data/services';
 
 import styles from './page.module.css';
+import { reviews } from '@/data/reviews';
 
 type FormData = {
   name: string;
@@ -242,6 +243,32 @@ export default function Home() {
                       Замовити послугу
                     </a>
                   </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section} id="reviews">
+          <div className={styles.container}>
+            <div className={styles.sectionHeader}>
+              <p className={styles.sectionLabel}>Відгуки</p>
+              <h2>Що кажуть клієнти</h2>
+            </div>
+
+            <div className={styles.reviewsGrid}>
+              {reviews.map((review) => (
+                <article key={review.name} className={styles.reviewCard}>
+                  <div className={styles.reviewHead}>
+                    <div className={styles.reviewAvatar}>
+                      <Image src={review.image} alt={review.name} fill sizes="80px" />
+                    </div>
+                    <div>
+                      <h3>{review.name}</h3>
+                      <p>{review.role}</p>
+                    </div>
+                  </div>
+                  <p className={styles.reviewText}>{review.text}</p>
                 </article>
               ))}
             </div>
