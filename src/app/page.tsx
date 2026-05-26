@@ -36,6 +36,7 @@ export default function Home() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
+  const [showPhoneMenu, setShowPhoneMenu] = useState(false);
 
   useEffect(() => {
     if (status === 'success') {
@@ -152,6 +153,7 @@ export default function Home() {
 
                 <div className={styles.heroPhones}>
                   <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
+                  <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
                   <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                     Viber
                   </a>
@@ -315,7 +317,8 @@ export default function Home() {
               </div>
 
               <div className={styles.contactButtons}>
-                <a href={socialLinks.phone}>Телефон</a>
+                <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
+                <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
                 <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                   Viber
                 </a>
@@ -338,7 +341,11 @@ export default function Home() {
               <div className={styles.contactInfo}>
                 <p>
                   <strong>Телефон</strong>
-                  <span>{contacts.phoneDisplay}</span>
+                  <span>
+                    <a href={socialLinks.phone} className={styles.contactLink}>{contacts.phoneDisplay}</a>
+                    <br />
+                    <a href={socialLinks.phone2} className={styles.contactLink}>{contacts.phoneDisplay2}</a>
+                  </span>
                 </p>
                 <p>
                   <strong>Графік</strong>
@@ -362,7 +369,9 @@ export default function Home() {
       </footer>
 
       <div className={styles.mobileDock}>
-        <a href={socialLinks.phone}>Телефон</a>
+        <button onClick={() => setShowPhoneMenu(true)} className={styles.dockButton}>
+          Телефон
+        </button>
         <a href={socialLinks.viber} target="_blank" rel="noreferrer">
           Viber
         </a>
@@ -370,6 +379,25 @@ export default function Home() {
           WhatsApp
         </a>
       </div>
+
+      {showPhoneMenu && (
+        <div className={styles.modalBackdrop} onClick={() => setShowPhoneMenu(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <h3>Оберіть номер телефону</h3>
+            <div className={styles.modalLinks}>
+              <a href={socialLinks.phone} className={styles.modalPhoneLink} onClick={() => setShowPhoneMenu(false)}>
+                📞 {contacts.phoneDisplay}
+              </a>
+              <a href={socialLinks.phone2} className={styles.modalPhoneLink} onClick={() => setShowPhoneMenu(false)}>
+                📞 {contacts.phoneDisplay2}
+              </a>
+            </div>
+            <button className={styles.modalCloseButton} onClick={() => setShowPhoneMenu(false)}>
+              Закрити
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

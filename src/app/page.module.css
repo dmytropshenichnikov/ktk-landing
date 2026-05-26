@@ -205,7 +205,8 @@
 .heroPhones a,
 .cardLink,
 .contactButtons a,
-.mobileDock a {
+.mobileDock a,
+.mobileDock button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -216,13 +217,13 @@
   font-weight: 700;
 }
 
-.heroPhones a:first-child,
+.heroPhones a:nth-child(-n+2),
 .cardLink {
   background: var(--accent);
   color: #fff;
 }
 
-.heroPhones a:not(:first-child) {
+.heroPhones a:nth-child(n+3) {
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
@@ -490,9 +491,14 @@
 }
 
 .contactButtons a,
-.mobileDock a {
+.mobileDock a,
+.mobileDock button {
   background: var(--accent);
   color: #fff;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font: inherit;
 }
 
 .contactsBox {
@@ -522,6 +528,16 @@
 .contactInfo span {
   color: var(--muted);
   line-height: 1.55;
+}
+
+.contactLink {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.contactLink:hover {
+  color: var(--accent);
 }
 
 .footer {
@@ -618,20 +634,134 @@
 
   .heroPhones,
   .contactButtons {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .heroPhones a,
-  .contactButtons a,
+  .contactButtons a {
+    width: 100%;
+    min-height: 42px;
+    font-size: 0.85rem;
+    padding: 0 8px;
+  }
+
   .cardLink {
     width: 100%;
   }
 
+  .headerContacts {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+
   .headerContacts a {
-    min-width: min(100%, 280px);
+    flex: 1;
+    min-width: 0;
+    max-width: 280px;
+    font-size: 0.85rem;
+    padding: 0 8px;
   }
 
   .mobileDock {
     display: grid;
   }
+}
+
+/* Modal backdrop & content styling */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(22, 34, 45, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalContent {
+  width: 100%;
+  max-width: 480px;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 24px 20px 34px;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modalContent h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 18px;
+  color: var(--dark);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.modalLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modalPhoneLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.modalPhoneLink:hover {
+  background: var(--accent-dark);
+}
+
+.modalPhoneLink:active {
+  transform: scale(0.98);
+}
+
+.modalCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-top: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.modalCloseButton:hover {
+  background: var(--line);
+  color: var(--dark);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
