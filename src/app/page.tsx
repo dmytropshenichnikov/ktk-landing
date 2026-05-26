@@ -128,6 +128,7 @@ export default function Home() {
 
             <div className={styles.headerContacts}>
               <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
+              <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
             </div>
           </div>
         </div>

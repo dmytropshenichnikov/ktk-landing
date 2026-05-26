@@ -80,6 +80,13 @@
   font-weight: 700;
 }
 
+.headerContacts {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .headerContacts a {
   display: inline-flex;
   align-items: center;
@@ -90,6 +97,15 @@
   color: #fff;
   padding: 0 16px;
   font-weight: 700;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.headerContacts a:hover {
+  background: var(--accent-dark);
+}
+
+.headerContacts a:active {
+  transform: scale(0.98);
 }
 
 .topLine .container p:last-child {
