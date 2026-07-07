@@ -95,7 +95,7 @@ export default function Home() {
       setStatus('success');
       const gtag = (window as any).gtag;
       if (gtag) {
-        gtag('event', 'conversion', { 'send_to': 'AW-18199730227/GCUICImBpswcELOwp-ZD' });
+        gtag('event', 'conversion', { 'send_to': 'AW-18199730227/GCUlCImBpswcELOwp-ZD' });
       }
     } catch {
       setStatus('error');
