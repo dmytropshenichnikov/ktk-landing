@@ -101,6 +101,14 @@ export default function Home() {
     }
   };
 
+  const handlePhoneClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const gtagFn = (window as any).gtag_report_conversion;
+    if (gtagFn) {
+      e.preventDefault();
+      gtagFn(e.currentTarget.href);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.topLine}>
@@ -128,8 +136,8 @@ export default function Home() {
             </nav>
 
             <div className={styles.headerContacts}>
-              <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
-              <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
+              <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+              <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
             </div>
           </div>
         </div>
@@ -152,8 +160,8 @@ export default function Home() {
                 </p>
 
                 <div className={styles.heroPhones}>
-                  <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
-                  <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
+                  <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+                  <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
                   <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                     Viber
                   </a>
@@ -317,8 +325,8 @@ export default function Home() {
               </div>
 
               <div className={styles.contactButtons}>
-                <a href={socialLinks.phone}>{contacts.phoneDisplay}</a>
-                <a href={socialLinks.phone2}>{contacts.phoneDisplay2}</a>
+                <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+                <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
                 <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                   Viber
                 </a>
@@ -342,9 +350,9 @@ export default function Home() {
                 <p>
                   <strong>Телефон</strong>
                   <span>
-                    <a href={socialLinks.phone} className={styles.contactLink}>{contacts.phoneDisplay}</a>
+                    <a href={socialLinks.phone} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
                     <br />
-                    <a href={socialLinks.phone2} className={styles.contactLink}>{contacts.phoneDisplay2}</a>
+                    <a href={socialLinks.phone2} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
                   </span>
                 </p>
                 <p>
@@ -385,10 +393,10 @@ export default function Home() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h3>Оберіть номер телефону</h3>
             <div className={styles.modalLinks}>
-              <a href={socialLinks.phone} className={styles.modalPhoneLink} onClick={() => setShowPhoneMenu(false)}>
+              <a href={socialLinks.phone} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
                 📞 {contacts.phoneDisplay}
               </a>
-              <a href={socialLinks.phone2} className={styles.modalPhoneLink} onClick={() => setShowPhoneMenu(false)}>
+              <a href={socialLinks.phone2} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
                 📞 {contacts.phoneDisplay2}
               </a>
             </div>
