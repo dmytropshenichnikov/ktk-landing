@@ -93,8 +93,10 @@ export default function Home() {
       }
 
       setStatus('success');
-      // Note: we don't clear formData here immediately to allow useEffect to use the email
-      // We could clear it after a short delay or in the effect
+      const gtag = (window as any).gtag;
+      if (gtag) {
+        gtag('event', 'conversion', { 'send_to': 'AW-18199730227/GCUICImBpswcELOwp-ZD' });
+      }
     } catch {
       setStatus('error');
       setErrorText("Помилка мережі. Перевірте з'єднання та спробуйте ще раз.");
