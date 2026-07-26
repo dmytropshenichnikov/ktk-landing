@@ -3,12 +3,10 @@
 import Image from 'next/image';
 import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
 
-import { companyName, contacts, socialLinks } from '@/config/site';
-import { products } from '@/data/products';
-import { services } from '@/data/services';
-
 import styles from './page.module.css';
-import { reviews } from '@/data/reviews';
+
+// SVG Icons
+import { IconCheck, IconPhone, IconViber, IconWhatsApp, IconClock, IconTruck, IconPackage, IconStar, IconArrowRight, IconMail, IconQuote, IconHammer, IconCrane, IconBuilding } from '@/components/icons';
 
 type FormData = {
   name: string;
@@ -20,23 +18,34 @@ type FormData = {
 
 type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
-const initialFormData: FormData = {
-  name: '',
-  phone: '',
-  email: '',
-  product: products[0] ? `${products[0].name} (${products[0].spec})` : '',
-  message: '',
-};
-
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
-const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
-
 export default function Home() {
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>({ name: '', phone: '', email: '', product: '', message: '' });
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
   const [showPhoneMenu, setShowPhoneMenu] = useState(false);
+  
+  // Dynamic data from DB
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+  const [dbServices, setDbServices] = useState<any[]>([]);
+  const [dbReviews, setDbReviews] = useState<any[]>([]);
+  const [dbSettings, setDbSettings] = useState<Record<string,string>>({});
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  useEffect(() => {
+    // Fetch dynamic content from DB
+    fetch('/api/content')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.products) setDbProducts(data.products);
+        if (data?.services) setDbServices(data.services);
+        if (data?.reviews) setDbReviews(data.reviews);
+        if (data?.settings) setDbSettings(data.settings);
+        setDataLoaded(true);
+      })
+      .catch(() => setDataLoaded(true));
+  }, []);
 
   useEffect(() => {
     if (status === 'success') {
@@ -115,8 +124,8 @@ export default function Home() {
     <div className={styles.page}>
       <div className={styles.topLine}>
         <div className={styles.container}>
-          <p>{companyName}</p>
-          <p>{contacts.workingHours}</p>
+          <p>{dbSettings.company_name || "ТОВ \"КТК\""}</p>
+          <p><IconClock size={14} /> {dbSettings.working_hours || "Пн-Сб: 08:00-18:00"}</p>
         </div>
       </div>
 
