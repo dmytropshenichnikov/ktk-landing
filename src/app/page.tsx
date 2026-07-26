@@ -41,7 +41,8 @@ export default function Home() {
   // State for dynamic DB content
   const [dbData, setDbData] = useState<{ products: any[]; services: any[]; reviews: any[]; settings: Record<string,string> } | null>(null);
 
-  // Fetch content from DB
+  // Fetch content from DB - wait for it to avoid image flickering
+  const [dataReady, setDataReady] = useState(false);
   useEffect(() => {
     fetch('/api/content')
       .then(r => r.json())
@@ -50,8 +51,22 @@ export default function Home() {
           setDbData(data);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setDataReady(true));
   }, []);
+
+  // Don't render until API responds (prevents image flicker from fallback->DB switch)
+  if (!dataReady) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#fff" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 40, height: 40, border: "3px solid #e5e7eb", borderTopColor: "#22c55e", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+          <p style={{ color: "#666", fontSize: 14 }}>Завантаження...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Use DB data if available, else fallback
   const products = dbData?.products?.length ? dbData.products : fallbackProducts;
@@ -192,7 +207,7 @@ export default function Home() {
       <main>
         <section className={styles.hero} id="hero">
           <div className={styles.heroImage}>
-            <Image src="/photos/kamaz-hero.jpg" alt="КамАЗ для доставки будівельних матеріалів" fill priority sizes="100vw" />
+            <Image src="/photos/kamaz-hero.jpg" alt="КамАЗ для доставки будівельних матеріалів" fill priority sizes="100vw"  />
           </div>
           <div className={styles.heroShade} />
 
@@ -294,7 +309,7 @@ export default function Home() {
               {products.map((product) => (
                 <article key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
-                    <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" />
+                    <img src={product.image} alt={product.name} style={{objectFit:"cover"}} onError={(e)=>{e.currentTarget.style.display="none"}} sizes="(max-width: 900px) 100vw, 33vw" priority={false} unoptimized={product.image?.startsWith("data:")} />
                   </div>
                   <div className={styles.productBody}>
                     <h3>{product.name}</h3>
