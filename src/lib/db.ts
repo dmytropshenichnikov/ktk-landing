@@ -1,58 +1,61 @@
-// Database helper - supports both Neon REST API and direct PostgreSQL connection
 import { Pool } from "pg";
 
 let pool: Pool | null = null;
 
+function getConnectionString(): string {
+  // Check all possible env var names that Neon/Vercel might use
+  const vars = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.NEON_DATABASE_URL,
+  ];
+  
+  for (const v of vars) {
+    if (v && v.startsWith("postgresql://")) {
+      return v;
+    }
+  }
+  
+  // Debug: log what's available
+  console.log("Available DB env vars:", {
+    DATABASE_URL: process.env.DATABASE_URL ? "set" : "not set",
+    POSTGRES_URL: process.env.POSTGRES_URL ? "set" : "not set",
+    POSTGRES_URL_NON_POOLING: process.env.POSTGRES_URL_NON_POOLING ? "set" : "not set",
+  });
+  
+  return "";
+}
+
 function getPool(): Pool {
   if (!pool) {
+    const connStr = getConnectionString();
+    if (!connStr) {
+      throw new Error(
+        "Database not configured. Add DATABASE_URL to Vercel Environment Variables."
+      );
+    }
+    console.log("Connecting to DB with:", connStr.slice(0, 40) + "...");
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL || "",
-      ssl: { rejectUnauthorized: false },
-      max: 10,
+      connectionString: connStr,
+      ssl: connStr.includes("sslmode=require") ? undefined : { rejectUnauthorized: false },
+      max: 5,
+      connectionTimeoutMillis: 10000,
     });
   }
   return pool;
 }
 
-// Try REST API first, fall back to pg pool
 export async function sql(query: string, params?: any[]): Promise<any[]> {
-  const dbUrl = process.env.NEON_DB_URL;
-  const apiKey = process.env.NEON_API_KEY;
-
-  // Try REST API if URL and key are available
-  if (dbUrl && apiKey) {
-    try {
-      const sqlUrl = dbUrl.replace("/rest/v1", "") + "/sql";
-      const res = await fetch(sqlUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": apiKey,
-          "Authorization": `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({ query, params }),
-      });
-      if (res.ok) {
-        return await res.json();
-      }
-      console.warn("REST API failed, falling back to PG:", await res.text().catch(() => ""));
-    } catch (e: any) {
-      console.warn("REST API error, falling back to PG:", e.message);
-    }
-  }
-
-  // Fall back to direct PostgreSQL connection
+  const client = await getPool().connect();
   try {
-    const client = await getPool().connect();
-    try {
-      const result = await client.query(query, params || []);
-      return result.rows;
-    } finally {
-      client.release();
-    }
+    const result = await client.query(query, params || []);
+    return result.rows;
   } catch (e: any) {
-    console.error("DB query error:", e.message);
+    console.error("DB error:", e.message);
     throw e;
+  } finally {
+    client.release();
   }
 }
 
