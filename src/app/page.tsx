@@ -134,7 +134,7 @@ export default function Home() {
           <div className={styles.headerRow}>
             <a className={styles.brand} href="#hero">
               <span>
-                <strong>{companyName}</strong>
+                <strong>{dbSettings.company_name || "ТОВ "КТК""}</strong>
                 <small>Продаж і доставка будівельних матеріалів</small>
               </span>
             </a>
@@ -147,8 +147,8 @@ export default function Home() {
             </nav>
 
             <div className={styles.headerContacts}>
-              <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
-              <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
+              <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
+              <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
             </div>
           </div>
         </div>
@@ -171,12 +171,12 @@ export default function Home() {
                 </p>
 
                 <div className={styles.heroPhones}>
-                  <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
-                  <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
-                  <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+                  <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
+                  <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
+                  <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
                     Viber
                   </a>
-                  <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                  <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
                     WhatsApp
                   </a>
                 </div>
@@ -220,7 +220,7 @@ export default function Home() {
                   required
                 />
                 <select id="hero-product" name="product" value={formData.product} onChange={handleChange}>
-                  {products.map((product) => (
+                  {dbProducts.map((product) => (
                     <option key={product.id} value={`${product.name} (${product.spec})`}>
                       {product.name} ({product.spec})
                     </option>
@@ -254,7 +254,7 @@ export default function Home() {
             </div>
 
             <div className={styles.productsGrid}>
-              {products.map((product) => (
+              {dbProducts.map((product) => (
                 <article key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
                     <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" />
@@ -282,7 +282,7 @@ export default function Home() {
             </div>
 
             <div className={styles.servicesGrid}>
-              {services.map((service) => (
+              {dbServices.map((service) => (
                 <article key={service.id} className={styles.serviceCard}>
                   <div className={styles.serviceImage}>
                     <Image src={service.image} alt={service.name} fill sizes="(max-width: 900px) 100vw, 50vw" />
@@ -309,7 +309,7 @@ export default function Home() {
             </div>
 
             <div className={styles.reviewsGrid}>
-              {reviews.map((review) => (
+              {dbReviews.map((review) => (
                 <article key={review.name} className={styles.reviewCard}>
                   <div className={styles.reviewHead}>
                     <div className={styles.reviewAvatar}>
@@ -336,12 +336,12 @@ export default function Home() {
               </div>
 
               <div className={styles.contactButtons}>
-                <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
-                <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
-                <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+                <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
+                <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
+                <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
                   Viber
                 </a>
-                <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
               </div>
@@ -361,18 +361,18 @@ export default function Home() {
                 <p>
                   <strong>Телефон</strong>
                   <span>
-                    <a href={socialLinks.phone} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+                    <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` className={styles.contactLink} onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
                     <br />
-                    <a href={socialLinks.phone2} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
+                    <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` className={styles.contactLink} onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
                   </span>
                 </p>
                 <p>
                   <strong>Графік</strong>
-                  <span>{contacts.workingHours}</span>
+                  <span>{dbSettings.working_hours || "Пн-Сб: 08:00-18:00"</span>
                 </p>
                 <p>
                   <strong>Регіон доставки</strong>
-                  <span>{contacts.deliveryArea}</span>
+                  <span>{dbSettings.delivery_area || "Полтава та область"</span>
                 </p>
               </div>
             </div>
@@ -382,7 +382,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <p>{companyName}</p>
+          <p>{dbSettings.company_name || "ТОВ "КТК""}</p>
           <p>Щебінь, пісок, гранодсів, кільця, шлакоблок</p>
         </div>
       </footer>
@@ -391,10 +391,10 @@ export default function Home() {
         <button onClick={() => setShowPhoneMenu(true)} className={styles.dockButton}>
           Телефон
         </button>
-        <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+        <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
           Viber
         </a>
-        <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+        <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
           WhatsApp
         </a>
       </div>
@@ -404,11 +404,11 @@ export default function Home() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h3>Оберіть номер телефону</h3>
             <div className={styles.modalLinks}>
-              <a href={socialLinks.phone} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
-                📞 {contacts.phoneDisplay}
+              <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
+                <IconPhone size={16} /> {dbSettings.phone_display || "050 304 4777"
               </a>
-              <a href={socialLinks.phone2} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
-                📞 {contacts.phoneDisplay2}
+              <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
+                <IconPhone size={16} /> {dbSettings.phone_display2 || "066 110 2829"
               </a>
             </div>
             <button className={styles.modalCloseButton} onClick={() => setShowPhoneMenu(false)}>
