@@ -65,8 +65,28 @@ export default function ServicesAdmin() {
           <h3>{edit.id ? "Редагувати" : "Нова"} послуга</h3>
           <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
             <input placeholder="Назва" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} style={inpStyle} />
-            <input placeholder="Шлях до фото" value={edit.image} onChange={(e) => setEdit({ ...edit, image: e.target.value })} style={inpStyle} />
-            <input placeholder="Мета" value={edit.meta} onChange={(e) => setEdit({ ...edit, meta: e.target.value })} style={inpStyle} />
+            <div>
+              <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 4 }}>Фото</label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input placeholder="Шлях або завантажте фото" value={edit.image} onChange={(e) => setEdit({ ...edit, image: e.target.value })} style={{ ...inpStyle, flex: 1 }} />
+                <label style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc", cursor: "pointer", fontSize: 13, background: "#f9f9f9", whiteSpace: "nowrap" }}>
+                  📷 Завантажити
+                  <input type="file" accept="image/*" hidden onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const fd = new FormData();
+                    fd.append("file", file); fd.append("folder", "photos");
+                    const r = await fetch("/api/upload", { method: "POST", body: fd });
+                    const d = await r.json();
+                    if (d.url) setEdit({ ...edit, image: d.url });
+                  }} />
+                </label>
+              </div>
+              {edit.image && edit.image !== "/photos/" && (
+                <img src={edit.image} alt="" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 6, border: "1px solid #eee" }} />
+              )}
+            </div>
+            <input placeholder="Мета (підзаголовок)" value={edit.meta} onChange={(e) => setEdit({ ...edit, meta: e.target.value })} style={inpStyle} />
             <input placeholder="Slug" value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} style={inpStyle} />
           </div>
           <textarea placeholder="Опис" value={edit.details} onChange={(e) => setEdit({ ...edit, details: e.target.value })}

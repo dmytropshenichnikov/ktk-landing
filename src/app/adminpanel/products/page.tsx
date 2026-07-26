@@ -72,8 +72,29 @@ export default function ProductsAdmin() {
             <input placeholder="Назва" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} style={inpStyle} />
             <input placeholder="Специфікація" value={edit.spec} onChange={(e) => setEdit({ ...edit, spec: e.target.value })} style={inpStyle} />
             <input placeholder="Ціна від" value={edit.price_from} onChange={(e) => setEdit({ ...edit, price_from: e.target.value })} style={inpStyle} />
-            <input placeholder="Шлях до фото" value={edit.image} onChange={(e) => setEdit({ ...edit, image: e.target.value })} style={inpStyle} />
-            <input placeholder="Slug" value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} style={inpStyle} />
+            <div>
+              <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 4 }}>Фото</label>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input placeholder="Шлях або завантажте фото" value={edit.image} onChange={(e) => setEdit({ ...edit, image: e.target.value })} style={{ ...inpStyle, flex: 1 }} />
+                <label style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc", cursor: "pointer", fontSize: 13, background: "#f9f9f9", whiteSpace: "nowrap" }}>
+                  📷 Завантажити
+                  <input type="file" accept="image/*" hidden onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const fd = new FormData();
+                    fd.append("file", file);
+                    fd.append("folder", "photos");
+                    const r = await fetch("/api/upload", { method: "POST", body: fd });
+                    const d = await r.json();
+                    if (d.url) setEdit({ ...edit, image: d.url });
+                  }} />
+                </label>
+              </div>
+              {edit.image && edit.image !== "/photos/" && (
+                <img src={edit.image} alt="preview" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 6, border: "1px solid #eee" }} />
+              )}
+            </div>
+            <input placeholder="Slug (напр. shheben)" value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} style={inpStyle} />
             <input placeholder="Порядок" type="number" value={edit.sort_order} onChange={(e) => setEdit({ ...edit, sort_order: parseInt(e.target.value) || 0 })} style={inpStyle} />
           </div>
           <textarea placeholder="Опис" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })}
