@@ -9,6 +9,7 @@ const SETTINGS_KEYS = [
   { key: "phone_raw2", label: "Телефон 2 (сирий)", default: "+380661102829" },
   { key: "working_hours", label: "Графік роботи", default: "Пн-Сб: 08:00-18:00" },
   { key: "delivery_area", label: "Регіон доставки", default: "Полтава та область" },
+  { key: "hero_label", label: "Мітка Hero", default: "Доставка будівельних матеріалів" },
   { key: "hero_title", label: "Заголовок Hero", default: "Сервіс із професійною доставкою будматеріалів" },
   { key: "hero_subtitle", label: "Підзаголовок Hero", default: "Щебінь, пісок, гранодсів, кільця колодязні та шлакоблок з доставкою по місту та області." },
   { key: "form_title", label: "Заголовок форми", default: "Залишити заявку" },
