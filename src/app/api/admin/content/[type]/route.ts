@@ -33,12 +33,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ type
     
     if (table === "site_settings" && key) {
       const rows = await sql(`SELECT value FROM site_settings WHERE key = $1`, [key]);
-      return NextResponse.json(rows[0] || null);
+      return NextResponse.json(rows[0] || null, { headers: { "Cache-Control": "public, max-age=30" } });
     }
     
     const orderClause = table === "applications" ? "id DESC" : "sort_order ASC, id DESC";
     const rows = await sql(`SELECT * FROM ${table} ORDER BY ${orderClause}`);
-    return NextResponse.json(rows);
+    return NextResponse.json(rows, { headers: { "Cache-Control": "public, max-age=30, s-maxage=60" } });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
