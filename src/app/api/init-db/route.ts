@@ -50,10 +50,11 @@ export async function GET() {
       name TEXT NOT NULL,
       role TEXT NOT NULL,
       text TEXT NOT NULL,
-      image TEXT NOT NULL DEFAULT '',
+      image TEXT DEFAULT '',
       sort_order INT DEFAULT 0,
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    await sql(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_name_text_idx ON reviews (name, text)`).catch(() => {});
 
     // Insert default admin if not exists
     const adminEmail = process.env.ADMIN_EMAIL || "admin@ktk.com.ua";

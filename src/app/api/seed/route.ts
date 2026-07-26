@@ -56,13 +56,15 @@ export async function GET() {
       count.services++;
     }
 
-    // Seed reviews
+    // Seed reviews (with dedup)
     for (const r of defaultReviews) {
       await sql(`INSERT INTO reviews (name, role, text, image, sort_order)
-        VALUES ($1,$2,$3,$4,$5)`,
+        VALUES ($1,$2,$3,$4,$5) ON CONFLICT (name, text) DO NOTHING`,
         [r.name, r.role, r.text, r.image, 0]);
       count.reviews++;
     }
+    // Remove duplicates (keep oldest by id)
+    await sql(`DELETE FROM reviews WHERE id NOT IN (SELECT MIN(id) FROM reviews GROUP BY name, text)`);
 
     // Seed settings
     for (const [key, value] of Object.entries(defaultSettings)) {
