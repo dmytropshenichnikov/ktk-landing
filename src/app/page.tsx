@@ -309,7 +309,7 @@ export default function Home() {
               {products.map((product) => (
                 <article key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
-                    <img src={product.image} alt={product.name} style={{objectFit:"cover"}} onError={(e)=>{e.currentTarget.style.display="none"}} sizes="(max-width: 900px) 100vw, 33vw" priority={false} unoptimized={product.image?.startsWith("data:")} />
+                    <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" unoptimized={product.image?.startsWith("data:")} />
                   </div>
                   <div className={styles.productBody}>
                     <h3>{product.name}</h3>
