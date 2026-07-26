@@ -67,10 +67,6 @@ export default function RootLayout({
             }
           `}
         </Script>
-        <Script
-          src="https://apis.google.com/js/platform.js"
-          strategy="afterInteractive"
-        />
         <Script id="merchant-widget" src="https://www.gstatic.com/shopping/merchant/merchantwidget.js" strategy="lazyOnload" />
         <Script id="merchant-widget-init" strategy="lazyOnload">
           {`

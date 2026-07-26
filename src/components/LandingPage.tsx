@@ -106,23 +106,6 @@ export default function LandingPage({ initialData }: { initialData: any }) {
     }
   }, [allProducts, formData.product]);
 
-  useEffect(() => {
-    if (status === 'success') {
-      const gapi = (window as any).gapi;
-      if (gapi) {
-        gapi.load('surveyoptin', function() {
-          gapi.surveyoptin.render({
-            "merchant_id": 5698959504,
-            "order_id": `ORDER_${Date.now()}`,
-            "email": formData.email || "customer@example.com",
-            "delivery_country": "UA",
-            "estimated_delivery_date": new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          });
-        });
-      }
-    }
-  }, [status, formData.email]);
-
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
