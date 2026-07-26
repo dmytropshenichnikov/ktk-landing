@@ -3,13 +3,14 @@
 import Image from 'next/image';
 import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
 
-import { companyName, contacts, socialLinks } from '@/config/site';
-import { products } from '@/data/products';
-import { services } from '@/data/services';
-
 import styles from './page.module.css';
-import { reviews } from '@/data/reviews';
 import { IconPhone, IconViber, IconWhatsApp, IconCheck, IconStar, IconQuote, IconMail, IconUser, IconTruck, IconPackage, IconBuilding, IconHammer, IconCrane, IconArrowRight, IconSend } from '@/components/icons';
+
+// Static fallback data
+import { companyName as fallbackCompany, contacts as fallbackContacts, socialLinks as fallbackSocial } from '@/config/site';
+import { products as fallbackProducts } from '@/data/products';
+import { services as fallbackServices } from '@/data/services';
+import { reviews as fallbackReviews } from '@/data/reviews';
 
 type FormData = {
   name: string;
@@ -21,23 +22,65 @@ type FormData = {
 
 type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
-const initialFormData: FormData = {
-  name: '',
-  phone: '',
-  email: '',
-  product: products[0] ? `${products[0].name} (${products[0].spec})` : '',
-  message: '',
-};
+// Dynamic data state (fetched from API)
+let dynamicProducts: any[] | null = null;
+let dynamicServices: any[] | null = null;
+let dynamicReviews: any[] | null = null;
+let dynamicSettings: Record<string,string> = {};
 
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
 const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
 
 export default function Home() {
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>({ name: '', phone: '', email: '', product: '', message: '' });
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
   const [showPhoneMenu, setShowPhoneMenu] = useState(false);
+
+  // State for dynamic DB content
+  const [dbData, setDbData] = useState<{ products: any[]; services: any[]; reviews: any[]; settings: Record<string,string> } | null>(null);
+
+  // Fetch content from DB
+  useEffect(() => {
+    fetch('/api/content')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.products || data?.services || data?.reviews || data?.settings) {
+          setDbData(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Use DB data if available, else fallback
+  const products = dbData?.products?.length ? dbData.products : fallbackProducts;
+  const services = dbData?.services?.length ? dbData.services : fallbackServices;
+  const reviews = dbData?.reviews?.length ? dbData.reviews : fallbackReviews;
+  const settings = dbData?.settings || {};
+  const companyName = settings.company_name || fallbackCompany;
+  const contacts = {
+    phoneDisplay: settings.phone_display || fallbackContacts.phoneDisplay,
+    phoneRaw: settings.phone_raw || fallbackContacts.phoneRaw,
+    phoneDisplay2: settings.phone_display2 || fallbackContacts.phoneDisplay2,
+    phoneRaw2: settings.phone_raw2 || fallbackContacts.phoneRaw2,
+    workingHours: settings.working_hours || fallbackContacts.workingHours,
+    deliveryArea: settings.delivery_area || fallbackContacts.deliveryArea,
+  };
+
+  const socialLinks = {
+    phone: `tel:${contacts.phoneRaw}`,
+    phone2: `tel:${contacts.phoneRaw2}`,
+    viber: `viber://chat?number=${encodeURIComponent(contacts.phoneRaw)}`,
+    whatsapp: `https://wa.me/${contacts.phoneRaw.replace(/[^0-9]/g, '')}`,
+  };
+
+  // Set initial product when data loads
+  useEffect(() => {
+    if (products.length > 0 && !formData.product) {
+      setFormData((prev: FormData) => ({ ...prev, product: `${products[0].name} (${products[0].spec})` }));
+    }
+  }, [products, formData.product]);
 
   useEffect(() => {
     if (status === 'success') {
