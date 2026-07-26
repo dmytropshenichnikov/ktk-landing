@@ -255,11 +255,13 @@ export default function Home() {
                   required
                 />
                 <select id="hero-product" name="product" value={formData.product} onChange={handleChange}>
-                  {products.map((product) => (
-                    <option key={product.id} value={`${product.name} (${product.spec})`}>
+                  <option value="">Оберіть матеріал</option>
+                  {products.map((product: any) => (
+                    <option key={product.id || product.slug} value={`${product.name} (${product.spec})`}>
                       {product.name} ({product.spec})
                     </option>
                   ))}
+                  <option value="Інший (вкажіть у коментарі)">Інший матеріал</option>
                 </select>
                 <textarea
                   id="hero-message"
