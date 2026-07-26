@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
-      path: "/adminpanel",
+      path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
     
