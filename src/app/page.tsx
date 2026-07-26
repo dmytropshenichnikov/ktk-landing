@@ -30,7 +30,7 @@ let dynamicSettings: Record<string,string> = {};
 
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
-const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
+const defaultHeroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'];
 
 export default function Home() {
   const [formData, setFormData] = useState<FormData>({ name: '', phone: '', email: '', product: '', message: '' });
@@ -55,6 +55,13 @@ export default function Home() {
 
   // Use DB data if available, else fallback - only show active products
   const allProducts = dbData?.products?.length ? dbData.products : fallbackProducts;
+  // Hero points from settings (stored as JSON array) or default
+  let heroPoints: string[] = defaultHeroPoints;
+  try {
+    if (settings.hero_points) heroPoints = JSON.parse(settings.hero_points);
+  } catch {}
+  const servicesList = dbData?.services?.length ? dbData.services : fallbackServices;
+  const reviewsList = dbData?.reviews?.length ? dbData.reviews : fallbackReviews;
   const products = allProducts.filter((p: any) => p.active !== false);
   const services = dbData?.services?.length ? dbData.services : fallbackServices;
   const reviews = dbData?.reviews?.length ? dbData.reviews : fallbackReviews;
@@ -171,7 +178,7 @@ export default function Home() {
             <a className={styles.brand} href="#hero">
               <span>
                 <strong>{companyName}</strong>
-                <small>Продаж і доставка будівельних матеріалів</small>
+                <small>{settings.header_subtitle || "Продаж і доставка будівельних матеріалів"}</small>
               </span>
             </a>
 
@@ -285,8 +292,8 @@ export default function Home() {
         <section className={styles.section} id="products">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Товари</p>
-              <h2>Основні позиції</h2>
+              <p className={styles.sectionLabel}>{settings.section_products_label || "Товари"}</p>
+              <h2>{settings.section_products_title || "Основні позиції"}</h2>
             </div>
 
             <div className={styles.productsGrid}>
@@ -313,12 +320,12 @@ export default function Home() {
         <section className={styles.sectionAlt} id="services">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Послуги</p>
+              <p className={styles.sectionLabel}>{settings.section_services_label || "Послуги"}</p>
               <h2>Доставка і маніпулятор</h2>
             </div>
 
             <div className={styles.servicesGrid}>
-              {services.map((service) => (
+              {servicesList.map((service) => (
                 <article key={service.id} className={styles.serviceCard}>
                   <div className={styles.serviceImage}>
                     <Image src={service.image} alt={service.name} fill sizes="(max-width: 900px) 100vw, 50vw" />
@@ -340,12 +347,12 @@ export default function Home() {
         <section className={styles.section} id="reviews">
           <div className={styles.container}>
             <div className={styles.sectionHeader}>
-              <p className={styles.sectionLabel}>Відгуки</p>
-              <h2>Що кажуть клієнти</h2>
+              <p className={styles.sectionLabel}>{settings.section_reviews_label || "Відгуки"}</p>
+              <h2>{settings.section_reviews_title || "Що кажуть клієнти"}</h2>
             </div>
 
             <div className={styles.reviewsGrid}>
-              {reviews.map((review) => (
+              {reviewsList.map((review) => (
                 <article key={review.name} className={styles.reviewCard}>
                   <div className={styles.reviewHead}>
                     <div className={styles.reviewAvatar}>
@@ -367,8 +374,8 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.contactStripBox}>
               <div>
-                <p className={styles.sectionLabelLight}>Зв&apos;язок</p>
-                <h2>Швидко відповімо телефоном, у Viber або WhatsApp</h2>
+              <p className={styles.sectionLabelLight}>{settings.contact_strip_label || "Зв'язок"}</p>
+              <h2>{settings.contact_strip_title || "Швидко відповімо телефоном, у Viber або WhatsApp"}</h2>
               </div>
 
               <div className={styles.contactButtons}>
@@ -389,8 +396,8 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.contactsBox}>
               <div>
-                <p className={styles.sectionLabel}>Контакти</p>
-                <h2>Зв&apos;яжіться з нами зручним способом</h2>
+                <p className={styles.sectionLabel}>{settings.contacts_label || "Контакти"}</p>
+                <h2>{settings.contacts_title || "Зв'яжіться з нами зручним способом"}</h2>
               </div>
 
               <div className={styles.contactInfo}>
