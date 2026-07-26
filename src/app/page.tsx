@@ -3,10 +3,13 @@
 import Image from 'next/image';
 import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
 
-import styles from './page.module.css';
+import { companyName, contacts, socialLinks } from '@/config/site';
+import { products } from '@/data/products';
+import { services } from '@/data/services';
 
-// SVG Icons
-import { IconCheck, IconPhone, IconViber, IconWhatsApp, IconClock, IconTruck, IconPackage, IconStar, IconArrowRight, IconMail, IconQuote, IconHammer, IconCrane, IconBuilding } from '@/components/icons';
+import styles from './page.module.css';
+import { reviews } from '@/data/reviews';
+import { IconPhone, IconViber, IconWhatsApp, IconCheck, IconStar, IconQuote, IconMail, IconUser, IconTruck, IconPackage, IconBuilding, IconHammer, IconCrane, IconArrowRight, IconSend } from '@/components/icons';
 
 type FormData = {
   name: string;
@@ -18,34 +21,23 @@ type FormData = {
 
 type SubmitStatus = 'idle' | 'sending' | 'success' | 'error';
 
+const initialFormData: FormData = {
+  name: '',
+  phone: '',
+  email: '',
+  product: products[0] ? `${products[0].name} (${products[0].spec})` : '',
+  message: '',
+};
+
 const phoneRegex = /^[0-9+()\s-]{8,20}$/;
 
+const heroPoints = ['Щебінь, пісок, гранодсів, кільця, шлакоблок', 'Доставка по місту та області', 'Послуги маніпулятора'] as const;
+
 export default function Home() {
-  const [formData, setFormData] = useState<FormData>({ name: '', phone: '', email: '', product: '', message: '' });
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
   const [showPhoneMenu, setShowPhoneMenu] = useState(false);
-  
-  // Dynamic data from DB
-  const [dbProducts, setDbProducts] = useState<any[]>([]);
-  const [dbServices, setDbServices] = useState<any[]>([]);
-  const [dbReviews, setDbReviews] = useState<any[]>([]);
-  const [dbSettings, setDbSettings] = useState<Record<string,string>>({});
-  const [dataLoaded, setDataLoaded] = useState(false);
-
-  useEffect(() => {
-    // Fetch dynamic content from DB
-    fetch('/api/content')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.products) setDbProducts(data.products);
-        if (data?.services) setDbServices(data.services);
-        if (data?.reviews) setDbReviews(data.reviews);
-        if (data?.settings) setDbSettings(data.settings);
-        setDataLoaded(true);
-      })
-      .catch(() => setDataLoaded(true));
-  }, []);
 
   useEffect(() => {
     if (status === 'success') {
@@ -124,8 +116,8 @@ export default function Home() {
     <div className={styles.page}>
       <div className={styles.topLine}>
         <div className={styles.container}>
-          <p>{dbSettings.company_name || "ТОВ \"КТК\""}</p>
-          <p><IconClock size={14} /> {dbSettings.working_hours || "Пн-Сб: 08:00-18:00"}</p>
+          <p>{companyName}</p>
+          <p>{contacts.workingHours}</p>
         </div>
       </div>
 
@@ -134,7 +126,7 @@ export default function Home() {
           <div className={styles.headerRow}>
             <a className={styles.brand} href="#hero">
               <span>
-                <strong>{dbSettings.company_name || "ТОВ \"КТК\""}</strong>
+                <strong>{companyName}</strong>
                 <small>Продаж і доставка будівельних матеріалів</small>
               </span>
             </a>
@@ -147,8 +139,8 @@ export default function Home() {
             </nav>
 
             <div className={styles.headerContacts}>
-              <a href={("tel:" + (dbSettings.phone_raw || "+380503044777"))} onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"}</a>
-              <a href={("tel:" + (dbSettings.phone_raw2 || "+380661102829"))} onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"}</a>
+              <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+              <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
             </div>
           </div>
         </div>
@@ -171,12 +163,12 @@ export default function Home() {
                 </p>
 
                 <div className={styles.heroPhones}>
-                  <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
-                  <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
-                  <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
+                  <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+                  <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
+                  <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                     Viber
                   </a>
-                  <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
+                  <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
                     WhatsApp
                   </a>
                 </div>
@@ -220,8 +212,8 @@ export default function Home() {
                   required
                 />
                 <select id="hero-product" name="product" value={formData.product} onChange={handleChange}>
-                  {dbProducts.map((product) => (
-                    <option key={product.id} value={("product.name + " (" + product.spec + ")")}>
+                  {products.map((product) => (
+                    <option key={product.id} value={`${product.name} (${product.spec})`}>
                       {product.name} ({product.spec})
                     </option>
                   ))}
@@ -254,7 +246,7 @@ export default function Home() {
             </div>
 
             <div className={styles.productsGrid}>
-              {dbProducts.map((product) => (
+              {products.map((product) => (
                 <article key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
                     <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" />
@@ -282,7 +274,7 @@ export default function Home() {
             </div>
 
             <div className={styles.servicesGrid}>
-              {dbServices.map((service) => (
+              {services.map((service) => (
                 <article key={service.id} className={styles.serviceCard}>
                   <div className={styles.serviceImage}>
                     <Image src={service.image} alt={service.name} fill sizes="(max-width: 900px) 100vw, 50vw" />
@@ -309,7 +301,7 @@ export default function Home() {
             </div>
 
             <div className={styles.reviewsGrid}>
-              {dbReviews.map((review) => (
+              {reviews.map((review) => (
                 <article key={review.name} className={styles.reviewCard}>
                   <div className={styles.reviewHead}>
                     <div className={styles.reviewAvatar}>
@@ -336,12 +328,12 @@ export default function Home() {
               </div>
 
               <div className={styles.contactButtons}>
-                <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
-                <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
-                <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
+                <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
+                <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
+                <a href={socialLinks.viber} target="_blank" rel="noreferrer">
                   Viber
                 </a>
-                <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
+                <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
               </div>
@@ -361,18 +353,18 @@ export default function Home() {
                 <p>
                   <strong>Телефон</strong>
                   <span>
-                    <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` className={styles.contactLink} onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
+                    <a href={socialLinks.phone} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
                     <br />
-                    <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` className={styles.contactLink} onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
+                    <a href={socialLinks.phone2} className={styles.contactLink} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
                   </span>
                 </p>
                 <p>
                   <strong>Графік</strong>
-                  <span>{dbSettings.working_hours || "Пн-Сб: 08:00-18:00"</span>
+                  <span>{contacts.workingHours}</span>
                 </p>
                 <p>
                   <strong>Регіон доставки</strong>
-                  <span>{dbSettings.delivery_area || "Полтава та область"</span>
+                  <span>{contacts.deliveryArea}</span>
                 </p>
               </div>
             </div>
@@ -382,7 +374,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <p>{dbSettings.company_name || "ТОВ \"КТК\""}</p>
+          <p>{companyName}</p>
           <p>Щебінь, пісок, гранодсів, кільця, шлакоблок</p>
         </div>
       </footer>
@@ -391,10 +383,10 @@ export default function Home() {
         <button onClick={() => setShowPhoneMenu(true)} className={styles.dockButton}>
           Телефон
         </button>
-        <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
+        <a href={socialLinks.viber} target="_blank" rel="noreferrer">
           Viber
         </a>
-        <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
+        <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
           WhatsApp
         </a>
       </div>
@@ -404,11 +396,11 @@ export default function Home() {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <h3>Оберіть номер телефону</h3>
             <div className={styles.modalLinks}>
-              <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
-                <IconPhone size={16} /> {dbSettings.phone_display || "050 304 4777"
+              <a href={socialLinks.phone} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
+                <IconPhone size={20} /> {contacts.phoneDisplay}
               </a>
-              <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
-                <IconPhone size={16} /> {dbSettings.phone_display2 || "066 110 2829"
+              <a href={socialLinks.phone2} className={styles.modalPhoneLink} onClick={(e) => { handlePhoneClick(e); setShowPhoneMenu(false); }}>
+                <IconPhone size={20} /> {contacts.phoneDisplay2}
               </a>
             </div>
             <button className={styles.modalCloseButton} onClick={() => setShowPhoneMenu(false)}>
