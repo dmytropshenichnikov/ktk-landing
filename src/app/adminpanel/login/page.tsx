@@ -26,6 +26,7 @@ export default function AdminLogin() {
       } else {
         localStorage.setItem("admin_token", data.token);
         localStorage.setItem("admin_email", data.email);
+        router.refresh();
         router.push("/adminpanel/dashboard");
       }
     } catch {

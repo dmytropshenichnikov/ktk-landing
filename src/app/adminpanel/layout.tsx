@@ -14,18 +14,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return;
     }
     
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      router.push("/adminpanel/login");
-      return;
-    }
-
-    fetch("/api/admin/verify", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    // Try to verify with cookie (automatic) first, fall back to localStorage token
+    fetch("/api/admin/verify", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         if (data.valid) {
+          setAuthed(true);
+          setLoading(false);
+        } else {
+          // Try localStorage token as fallback
+          const token = localStorage.getItem("admin_token");
+          if (token) {
+            return fetch("/api/admin/verify", {
+              headers: { Authorization: `Bearer ${token}` },
+            }).then((r) => r.json());
+          }
+          return { valid: false };
+        }
+      })
+      .then((data) => {
+        if (data?.valid) {
           setAuthed(true);
         } else {
           localStorage.removeItem("admin_token");
