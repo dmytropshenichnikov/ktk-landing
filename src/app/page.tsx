@@ -200,11 +200,9 @@ export default function Home() {
           <div className={styles.container}>
             <div className={styles.heroGrid}>
               <div className={styles.heroContent}>
-                <p className={styles.heroLabel}>Доставка будівельних матеріалів</p>
-                <h1>Сервіс із професійною доставкою будматеріалів</h1>
-                <p className={styles.heroText}>
-                  Щебінь, пісок, гранодсів, кільця колодязні та шлакоблок з доставкою по місту та області.
-                </p>
+                <p className={styles.heroLabel}>{settings.hero_label || "Доставка будівельних матеріалів"}</p>
+                <h1>{settings.hero_title || "Сервіс із професійною доставкою будматеріалів"}</h1>
+                <p className={styles.heroText}>{settings.hero_subtitle || "Щебінь, пісок, гранодсів, кільця колодязні та шлакоблок з доставкою по місту та області."}</p>
 
                 <div className={styles.heroPhones}>
                   <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
@@ -225,8 +223,8 @@ export default function Home() {
               </div>
 
               <form className={styles.heroForm} id="contact-form" onSubmit={handleSubmit}>
-                <h2>Залишити заявку</h2>
-                <p>Напишіть, що потрібно привезти, і ми швидко зв&apos;яжемося з вами.</p>
+                <h2>{settings.form_title || "Залишити заявку"}</h2>
+                <p>{settings.form_subtitle || "Напишіть, що потрібно привезти, і ми швидко зв'яжемося з вами."}</p>
 
                 <input
                   id="hero-name"
@@ -274,10 +272,10 @@ export default function Home() {
                 />
 
                 <button type="submit" disabled={status === 'sending'}>
-                  {status === 'sending' ? 'Відправляємо...' : 'Надіслати заявку'}
+                  {status === 'sending' ? 'Відправляємо...' : (settings.form_button || "Надіслати заявку")}
                 </button>
 
-                {status === 'success' && <p className={styles.success}>Заявку відправлено. Ми скоро зв&apos;яжемося з вами.</p>}
+                {status === 'success' && <p className={styles.success}>{settings.form_success || "Заявку відправлено. Ми скоро зв'яжемося з вами."}</p>}
                 {status === 'error' && <p className={styles.error}>{errorText}</p>}
               </form>
             </div>
