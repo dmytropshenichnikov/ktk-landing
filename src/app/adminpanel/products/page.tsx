@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
+import { uploadPhoto } from "@/lib/upload";
 
 export default function ProductsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [edit, setEdit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : "";
 
   const load = async () => {
@@ -13,7 +15,6 @@ export default function ProductsAdmin() {
     setItems(Array.isArray(data) ? data : []);
     setLoading(false);
   };
-
   useEffect(() => { load(); }, []);
 
   const seed = async () => {
@@ -39,21 +40,21 @@ export default function ProductsAdmin() {
     load();
   };
 
-  const uploadPhoto = async (file: File) => {
-    const fd = new FormData(); fd.append("file", file); fd.append("folder", "photos");
-    const r = await fetch("/api/upload", { method: "POST", body: fd });
-    const d = await r.json();
-    if (d.url) setEdit({ ...edit, image: d.url });
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const url = await uploadPhoto(file, "photos");
+      setEdit({ ...edit, image: url });
+    } catch (e: any) {
+      alert("Помилка завантаження: " + e.message);
+    }
+    setUploading(false);
   };
 
-  const addDetail = () => {
-    setEdit({ ...edit, details: [...(edit.details || []), ""] });
-  };
-
+  const addDetail = () => setEdit({ ...edit, details: [...(edit.details || []), ""] });
   const updateDetail = (i: number, val: string) => {
     const d = [...(edit.details || [])]; d[i] = val; setEdit({ ...edit, details: d });
   };
-
   const removeDetail = (i: number) => {
     setEdit({ ...edit, details: (edit.details || []).filter((_: any, idx: number) => idx !== i) });
   };
@@ -108,13 +109,20 @@ export default function ProductsAdmin() {
               <div style={fieldCell}>
                 <label style={label}>Фото</label>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <input value={edit.image} onChange={e => setEdit({ ...edit, image: e.target.value })} style={{ ...input, flex: 1 }} placeholder="/photos/shheben.jpg" />
-                  <label style={photoBtn}>
-                    📷
-                    <input type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
+                  <input value={edit.image} onChange={e => setEdit({ ...edit, image: e.target.value })} style={{ ...input, flex: 1 }} placeholder="Вставте URL або завантажте фото" />
+                  <label style={{
+                    ...photoBtn, opacity: uploading ? 0.5 : 1, pointerEvents: uploading ? "none" : "auto" as any,
+                  }}>
+                    {uploading ? "⏳" : "📷"}
+                    <input type="file" accept="image/*" hidden disabled={uploading} onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }} />
                   </label>
                 </div>
-                {edit.image && <img src={edit.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, marginTop: 8, background: "#f5f5f5" }} />}
+                {edit.image && (
+                  <div style={{ marginTop: 8, position: "relative" }}>
+                    <img src={edit.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, background: "#f5f5f5" }} />
+                    <button onClick={() => setEdit({ ...edit, image: "" })} style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)", color: "#fff", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer" }}>✕</button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -163,6 +171,7 @@ export default function ProductsAdmin() {
   );
 }
 
+const st = (base: React.CSSProperties): React.CSSProperties => base;
 const label: React.CSSProperties = { display: "block", fontSize: 13, color: "#666", marginBottom: 4, fontWeight: 500 };
 const input: React.CSSProperties = { padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none", boxSizing: "border-box" };
 const fieldGrid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 };
@@ -176,4 +185,4 @@ const btnBlue: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, bor
 const btnRed: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontSize: 13 };
 const btnGray: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#e5e7eb", color: "#333", cursor: "pointer", fontSize: 13 };
 const btnYellow: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 };
-const photoBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 18, background: "#f9f9f9" };
+const photoBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 18, background: "#f9f9f9", display: "inline-flex", alignItems: "center", justifyContent: "center" };
