@@ -5,7 +5,6 @@ export default function ProductsAdmin() {
   const [items, setItems] = useState<any[]>([]);
   const [edit, setEdit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
   const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : "";
 
   const load = async () => {
@@ -16,6 +15,13 @@ export default function ProductsAdmin() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const seed = async () => {
+    const r = await fetch("/api/seed");
+    const d = await r.json();
+    alert("Дані завантажено! " + JSON.stringify(d.count));
+    load();
+  };
 
   const save = async () => {
     const method = edit.id ? "PUT" : "POST";
@@ -37,8 +43,25 @@ export default function ProductsAdmin() {
 
   return (
     <div>
-      <h1>📦 Товари</h1>
-      <button onClick={() => setEdit({ slug: "", name: "", spec: "", price_from: "", description: "", image: "/photos/", details: [], sort_order: 0 })} style={btnStyle}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h1 style={{ margin: 0 }}>Товари</h1>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={seed} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: "bold" }}>
+            Завантажити з файлів у БД
+          </button>
+          <button onClick={load} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#6b7280", color: "#fff", cursor: "pointer" }}>
+            Оновити
+          </button>
+        </div>
+      </div>
+
+      {items.length === 0 && (
+        <div style={{ background: "#fef3c7", padding: 16, borderRadius: 12, marginBottom: 20, border: "1px solid #f59e0b" }}>
+          База даних порожня. Натисни <strong>"Завантажити з файлів у БД"</strong> щоб перенести товари з файлів.
+        </div>
+      )}
+
+      <button onClick={() => setEdit({ slug: "", name: "", spec: "", price_from: "", description: "", image: "/photos/", details: [], sort_order: 0 })} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#22c55e", color: "#fff", cursor: "pointer", fontWeight: "bold", marginBottom: 20 }}>
         + Додати товар
       </button>
 
@@ -56,7 +79,7 @@ export default function ProductsAdmin() {
           <textarea placeholder="Опис" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })}
             style={{ ...inpStyle, width: "100%", marginTop: 10, minHeight: 60 }} />
           <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-            <button onClick={save} style={{ ...btnStyle, background: "#1a6b3c", color: "#fff" }}>Зберегти</button>
+            <button onClick={save} style={{ ...btnStyle, background: "#22c55e", color: "#fff" }}>Зберегти</button>
             <button onClick={() => setEdit(null)} style={{ ...btnStyle, background: "#ccc" }}>Скасувати</button>
           </div>
         </div>
@@ -70,8 +93,8 @@ export default function ProductsAdmin() {
               <br /><small>{item.spec}</small>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setEdit(item)} style={{ ...btnStyle, background: "#3498db", color: "#fff" }}>✏️</button>
-              <button onClick={() => del(item.id)} style={{ ...btnStyle, background: "#e74c3c", color: "#fff" }}>🗑️</button>
+              <button onClick={() => setEdit(item)} style={{ ...btnStyle, background: "#3b82f6", color: "#fff" }}>Редагувати</button>
+              <button onClick={() => del(item.id)} style={{ ...btnStyle, background: "#ef4444", color: "#fff" }}>Видалити</button>
             </div>
           </div>
         ))}
