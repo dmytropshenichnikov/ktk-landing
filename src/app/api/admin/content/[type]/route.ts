@@ -7,6 +7,7 @@ const TABLES: Record<string, string> = {
   services: "services",
   reviews: "reviews",
   settings: "site_settings",
+  applications: "applications",
 };
 
 function checkAuth(request: Request): boolean {
@@ -115,9 +116,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ type
     } else if (table === "services") {
       await sql(`UPDATE services SET slug=$1, name=$2, details=$3, image=$4, meta=$5, sort_order=$6, updated_at=NOW() WHERE id=$7`,
         [data.slug, data.name, data.details, data.image, data.meta || "", data.sort_order || 0, id]);
-    } else if (table === "reviews") {
+    } else     if (table === "reviews") {
       await sql(`UPDATE reviews SET name=$1, role=$2, text=$3, image=$4, sort_order=$5 WHERE id=$6`,
         [data.name, data.role, data.text, data.image || "", data.sort_order || 0, id]);
+    }
+    
+    if (table === "applications") {
+      await sql(`UPDATE applications SET status=$1 WHERE id=$2`, [data.status || "new", id]);
+      return NextResponse.json({ success: true });
     }
     
     return NextResponse.json({ success: true });

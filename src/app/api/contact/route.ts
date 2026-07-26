@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import sql from '@/lib/db';
 
 type ContactPayload = {
   name?: string;
@@ -32,43 +33,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Невірний формат телефону.' }, { status: 400 });
     }
 
+    // Save to database
+    try {
+      // Ensure applications table exists (auto-migrate)
+      await sql(`CREATE TABLE IF NOT EXISTS applications (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT DEFAULT '',
+        product TEXT DEFAULT '',
+        message TEXT DEFAULT '',
+        status TEXT DEFAULT 'new',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )`).catch(() => {});
+      
+      await sql(`INSERT INTO applications (name, phone, email, product, message, status) 
+        VALUES ($1, $2, $3, $4, $5, 'new')`,
+        [name, phone, email, product, message]);
+    } catch (dbError) {
+      console.error('DB save error:', dbError);
+      // Non-fatal - continue to Telegram
+    }
+
+    // Save to Telegram
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
 
-    if (!botToken || !chatId) {
-      console.error('Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID in env');
-      return NextResponse.json(
-        { error: 'Сервер не налаштований для відправки повідомлень.' },
-        { status: 500 },
-      );
-    }
+    if (botToken && chatId) {
+      const textLines = [
+        '<b>Нова заявка з сайту ТОВ "КТК"</b>',
+        `<b>Ім'я:</b> ${name}`,
+        `<b>Телефон:</b> ${phone}`,
+        email ? `<b>Email:</b> ${email}` : '<b>Email: не вказано</b>',
+        product ? `<b>Матеріал:</b> ${product}` : '<b>Матеріал: не вказано</b>',
+        message ? `<b>Коментар:</b> ${message}` : '<b>Коментар: -</b>',
+        `<b>Час:</b> ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
+      ];
 
-    const textLines = [
-      '<b>Нова заявка з сайту ТОВ "КТК"</b>',
-      `<b>Ім'я:</b> ${name}`,
-      `<b>Телефон:</b> ${phone}`,
-      email ? `<b>Email:</b> ${email}` : '<b>Email: не вказано</b>',
-      product ? `<b>Матеріал:</b> ${product}` : '<b>Матеріал: не вказано</b>',
-      message ? `<b>Коментар:</b> ${message}` : '<b>Коментар: -</b>',
-      `<b>Час:</b> ${new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}`,
-    ];
-
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: textLines.join('\n'),
-        parse_mode: 'HTML'
-      }),
-    });
-
-    if (!telegramResponse.ok) {
-      const error = await telegramResponse.text();
-      console.error('Telegram API error:', error);
-      return NextResponse.json({ error: 'Не вдалося передати заявку в Telegram.' }, { status: 502 });
+      try {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: textLines.join('\n'), parse_mode: 'HTML' }),
+        });
+      } catch (tgError) {
+        console.error('Telegram error:', tgError);
+      }
     }
 
     return NextResponse.json({ success: true });
