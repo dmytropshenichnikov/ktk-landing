@@ -15,12 +15,13 @@ function checkAuth(request: Request): boolean {
   return !!verifyToken(token);
 }
 
-export async function GET(request: Request, { params }: { params: { type: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ type: string }> }) {
   if (!checkAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
-  const table = TABLES[params.type];
+  const { type } = await params;
+  const table = TABLES[type];
   if (!table) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
@@ -41,12 +42,13 @@ export async function GET(request: Request, { params }: { params: { type: string
   }
 }
 
-export async function POST(request: Request, { params }: { params: { type: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ type: string }> }) {
   if (!checkAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
-  const table = TABLES[params.type];
+  const { type } = await params;
+  const table = TABLES[type];
   if (!table) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
@@ -88,12 +90,13 @@ export async function POST(request: Request, { params }: { params: { type: strin
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { type: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ type: string }> }) {
   if (!checkAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
-  const table = TABLES[params.type];
+  const { type } = await params;
+  const table = TABLES[type];
   if (!table) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
@@ -123,12 +126,13 @@ export async function PUT(request: Request, { params }: { params: { type: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { type: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ type: string }> }) {
   if (!checkAuth(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
-  const table = TABLES[params.type];
+  const { type } = await params;
+  const table = TABLES[type];
   if (!table) {
     return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
