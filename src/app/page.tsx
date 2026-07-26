@@ -41,8 +41,7 @@ export default function Home() {
   // State for dynamic DB content
   const [dbData, setDbData] = useState<{ products: any[]; services: any[]; reviews: any[]; settings: Record<string,string> } | null>(null);
 
-  // Fetch content from DB - wait for it to avoid image flickering
-  const [dataReady, setDataReady] = useState(false);
+  // Fetch content from DB (no loading state - renders immediately with fallback)
   useEffect(() => {
     fetch('/api/content')
       .then(r => r.json())
@@ -51,22 +50,8 @@ export default function Home() {
           setDbData(data);
         }
       })
-      .catch(() => {})
-      .finally(() => setDataReady(true));
+      .catch(() => {});
   }, []);
-
-  // Don't render until API responds (prevents image flicker from fallback->DB switch)
-  if (!dataReady) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#fff" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 40, height: 40, border: "3px solid #e5e7eb", borderTopColor: "#22c55e", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-          <p style={{ color: "#666", fontSize: 14 }}>Завантаження...</p>
-        </div>
-      </div>
-    );
-  }
 
   // Use DB data if available, else fallback - only show active products
   const allProducts = dbData?.products?.length ? dbData.products : fallbackProducts;
@@ -270,10 +255,10 @@ export default function Home() {
                   onChange={handleChange}
                   required
                 />
-                <select id="hero-product" name="product" value={formData.product} onChange={handleChange}>
+                <select id="hero-product" name="product" value={formData.product || ""} onChange={handleChange}>
                   <option value="">Оберіть матеріал</option>
-                  {products.map((product: any) => (
-                    <option key={product.id || product.slug} value={`${product.name} (${product.spec})`}>
+                  {products.map((product: any, idx: number) => (
+                    <option key={product?.id || product?.slug || idx} value={`${product.name} (${product.spec})`}>
                       {product.name} ({product.spec})
                     </option>
                   ))}
