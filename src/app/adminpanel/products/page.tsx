@@ -34,88 +34,127 @@ export default function ProductsAdmin() {
   };
 
   const del = async (id: number) => {
-    if (!confirm("Видалити?")) return;
+    if (!confirm("Видалити товар?")) return;
     await fetch(`/api/admin/content/products?id=${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
     load();
   };
 
-  if (loading) return <p>Завантаження...</p>;
+  const uploadPhoto = async (file: File) => {
+    const fd = new FormData(); fd.append("file", file); fd.append("folder", "photos");
+    const r = await fetch("/api/upload", { method: "POST", body: fd });
+    const d = await r.json();
+    if (d.url) setEdit({ ...edit, image: d.url });
+  };
+
+  const addDetail = () => {
+    setEdit({ ...edit, details: [...(edit.details || []), ""] });
+  };
+
+  const updateDetail = (i: number, val: string) => {
+    const d = [...(edit.details || [])]; d[i] = val; setEdit({ ...edit, details: d });
+  };
+
+  const removeDetail = (i: number) => {
+    setEdit({ ...edit, details: (edit.details || []).filter((_: any, idx: number) => idx !== i) });
+  };
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h1 style={{ margin: 0 }}>Товари</h1>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={seed} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: "bold" }}>
-            Завантажити з файлів у БД
-          </button>
-          <button onClick={load} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#6b7280", color: "#fff", cursor: "pointer" }}>
-            Оновити
-          </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
+        <h1 style={{ margin: 0, fontSize: 22 }}>Товари</h1>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={seed} style={btnYellow}>Завантажити з файлів у БД</button>
+          <button onClick={load} style={btnGray}>Оновити</button>
         </div>
       </div>
 
-      {items.length === 0 && (
-        <div style={{ background: "#fef3c7", padding: 16, borderRadius: 12, marginBottom: 20, border: "1px solid #f59e0b" }}>
-          База даних порожня. Натисни <strong>"Завантажити з файлів у БД"</strong> щоб перенести товари з файлів.
-        </div>
+      {items.length === 0 && !loading && (
+        <div style={emptyBox}>База даних порожня. Натисни <strong>"Завантажити з файлів у БД"</strong> щоб перенести товари.</div>
       )}
 
-      <button onClick={() => setEdit({ slug: "", name: "", spec: "", price_from: "", description: "", image: "/photos/", details: [], sort_order: 0 })} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#22c55e", color: "#fff", cursor: "pointer", fontWeight: "bold", marginBottom: 20 }}>
+      <button onClick={() => setEdit({ slug: "", name: "", spec: "", price_from: "", description: "", image: "", details: [], sort_order: 0 })} style={btnGreen}>
         + Додати товар
       </button>
 
       {edit && (
-        <div style={{ background: "#fff", padding: 20, borderRadius: 12, margin: "20px 0" }}>
-          <h3>{edit.id ? "Редагувати" : "Новий"} товар</h3>
-          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "1fr 1fr" }}>
-            <input placeholder="Назва" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} style={inpStyle} />
-            <input placeholder="Специфікація" value={edit.spec} onChange={(e) => setEdit({ ...edit, spec: e.target.value })} style={inpStyle} />
-            <input placeholder="Ціна від" value={edit.price_from} onChange={(e) => setEdit({ ...edit, price_from: e.target.value })} style={inpStyle} />
-            <div>
-              <label style={{ display: "block", fontSize: 13, color: "#666", marginBottom: 4 }}>Фото</label>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input placeholder="Шлях або завантажте фото" value={edit.image} onChange={(e) => setEdit({ ...edit, image: e.target.value })} style={{ ...inpStyle, flex: 1 }} />
-                <label style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc", cursor: "pointer", fontSize: 13, background: "#f9f9f9", whiteSpace: "nowrap" }}>
-                  📷 Завантажити
-                  <input type="file" accept="image/*" hidden onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const fd = new FormData();
-                    fd.append("file", file);
-                    fd.append("folder", "photos");
-                    const r = await fetch("/api/upload", { method: "POST", body: fd });
-                    const d = await r.json();
-                    if (d.url) setEdit({ ...edit, image: d.url });
-                  }} />
-                </label>
-              </div>
-              {edit.image && edit.image !== "/photos/" && (
-                <img src={edit.image} alt="preview" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8, marginTop: 6, border: "1px solid #eee" }} />
-              )}
+        <div style={modalOverlay} onClick={() => setEdit(null)}>
+          <div style={modalContent} onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>{edit.id ? "Редагувати товар" : "Новий товар"}</h3>
+              <button onClick={() => setEdit(null)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#999" }}>✕</button>
             </div>
-            <input placeholder="Slug (напр. shheben)" value={edit.slug} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} style={inpStyle} />
-            <input placeholder="Порядок" type="number" value={edit.sort_order} onChange={(e) => setEdit({ ...edit, sort_order: parseInt(e.target.value) || 0 })} style={inpStyle} />
-          </div>
-          <textarea placeholder="Опис" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })}
-            style={{ ...inpStyle, width: "100%", marginTop: 10, minHeight: 60 }} />
-          <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-            <button onClick={save} style={{ ...btnStyle, background: "#22c55e", color: "#fff" }}>Зберегти</button>
-            <button onClick={() => setEdit(null)} style={{ ...btnStyle, background: "#ccc" }}>Скасувати</button>
+
+            <div style={fieldGrid}>
+              <div style={fieldCell}>
+                <label style={label}>Назва</label>
+                <input value={edit.name} onChange={e => setEdit({ ...edit, name: e.target.value })} style={input} placeholder="Щебінь" />
+              </div>
+              <div style={fieldCell}>
+                <label style={label}>Специфікація</label>
+                <input value={edit.spec} onChange={e => setEdit({ ...edit, spec: e.target.value })} style={input} placeholder="Фракції 5-20, 20-40, 40-70 мм" />
+              </div>
+              <div style={fieldCell}>
+                <label style={label}>Ціна від</label>
+                <input value={edit.price_from} onChange={e => setEdit({ ...edit, price_from: e.target.value })} style={input} placeholder="від 1200 грн/т" />
+              </div>
+              <div style={fieldCell}>
+                <label style={label}>Slug</label>
+                <input value={edit.slug} onChange={e => setEdit({ ...edit, slug: e.target.value })} style={input} placeholder="shheben" />
+              </div>
+              <div style={fieldCell}>
+                <label style={label}>Порядок</label>
+                <input type="number" value={edit.sort_order} onChange={e => setEdit({ ...edit, sort_order: parseInt(e.target.value) || 0 })} style={input} />
+              </div>
+              <div style={fieldCell}>
+                <label style={label}>Фото</label>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input value={edit.image} onChange={e => setEdit({ ...edit, image: e.target.value })} style={{ ...input, flex: 1 }} placeholder="/photos/shheben.jpg" />
+                  <label style={photoBtn}>
+                    📷
+                    <input type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); }} />
+                  </label>
+                </div>
+                {edit.image && <img src={edit.image} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 8, marginTop: 8, background: "#f5f5f5" }} />}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label style={label}>Опис</label>
+              <textarea value={edit.description} onChange={e => setEdit({ ...edit, description: e.target.value })} style={{ ...input, minHeight: 60, width: "100%" }} placeholder="Для бетону, підсипки, дренажу..." />
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <label style={label}>Матеріали / деталі</label>
+              {(edit.details || []).map((d: string, i: number) => (
+                <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+                  <input value={d} onChange={e => updateDetail(i, e.target.value)} style={{ ...input, flex: 1 }} placeholder="Навалом і з доставкою" />
+                  <button onClick={() => removeDetail(i)} style={{ ...btnGray, padding: "6px 10px" }}>✕</button>
+                </div>
+              ))}
+              <button onClick={addDetail} style={{ ...btnGray, fontSize: 13, marginTop: 4 }}>+ Додати матеріал</button>
+            </div>
+
+            <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+              <button onClick={save} style={{ ...btnGreen, flex: 1 }}>Зберегти</button>
+              <button onClick={() => setEdit(null)} style={{ ...btnGray, flex: 1 }}>Скасувати</button>
+            </div>
           </div>
         </div>
       )}
 
-      <div style={{ display: "grid", gap: 15, marginTop: 20 }}>
+      <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
         {items.map((item: any) => (
-          <div key={item.id} style={{ background: "#fff", padding: 15, borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <strong>{item.name}</strong> — {item.price_from}
-              <br /><small>{item.spec}</small>
+          <div key={item.id} style={card}>
+            <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+              {item.image && <img src={item.image} alt="" style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover", background: "#eee" }} />}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong>{item.name}</strong>
+                <div style={{ fontSize: 13, color: "#666" }}>{item.price_from} — {item.spec}</div>
+              </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setEdit(item)} style={{ ...btnStyle, background: "#3b82f6", color: "#fff" }}>Редагувати</button>
-              <button onClick={() => del(item.id)} style={{ ...btnStyle, background: "#ef4444", color: "#fff" }}>Видалити</button>
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={() => setEdit(item)} style={btnBlue}>Редагувати</button>
+              <button onClick={() => del(item.id)} style={btnRed}>Видалити</button>
             </div>
           </div>
         ))}
@@ -124,5 +163,17 @@ export default function ProductsAdmin() {
   );
 }
 
-const btnStyle: React.CSSProperties = { padding: "8px 16px", borderRadius: 8, border: "none", cursor: "pointer", fontWeight: "bold", fontSize: 14 };
-const inpStyle: React.CSSProperties = { padding: 10, borderRadius: 8, border: "1px solid #ccc", fontSize: 14 };
+const label: React.CSSProperties = { display: "block", fontSize: 13, color: "#666", marginBottom: 4, fontWeight: 500 };
+const input: React.CSSProperties = { padding: "10px 12px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 14, outline: "none", boxSizing: "border-box" };
+const fieldGrid: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 12 };
+const fieldCell: React.CSSProperties = { display: "flex", flexDirection: "column" };
+const card: React.CSSProperties = { background: "#fff", padding: 16, borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" };
+const emptyBox: React.CSSProperties = { background: "#fef3c7", padding: 16, borderRadius: 12, marginBottom: 16, border: "1px solid #f59e0b", fontSize: 14 };
+const modalOverlay: React.CSSProperties = { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
+const modalContent: React.CSSProperties = { background: "#fff", borderRadius: 16, padding: 24, maxWidth: 700, width: "100%", maxHeight: "90vh", overflow: "auto" };
+const btnGreen: React.CSSProperties = { padding: "10px 20px", borderRadius: 8, border: "none", background: "#22c55e", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 14 };
+const btnBlue: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", cursor: "pointer", fontSize: 13 };
+const btnRed: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", cursor: "pointer", fontSize: 13 };
+const btnGray: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#e5e7eb", color: "#333", cursor: "pointer", fontSize: 13 };
+const btnYellow: React.CSSProperties = { padding: "8px 14px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 13 };
+const photoBtn: React.CSSProperties = { padding: "8px 12px", borderRadius: 8, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 18, background: "#f9f9f9" };
