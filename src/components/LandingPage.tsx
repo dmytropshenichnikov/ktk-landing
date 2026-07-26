@@ -299,7 +299,7 @@ export default function LandingPage({ initialData }: { initialData: any }) {
               {allProducts.map((product: any) => (
                 <article key={product.id} className={styles.productCard}>
                   <div className={styles.productImage}>
-                    <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" unoptimized={product.image?.startsWith("data:")} />
+                    <Image src={product.image} alt={product.name} fill sizes="(max-width: 900px) 100vw, 33vw" unoptimized={product.image?.startsWith("data:")} onError={(e)=>e.currentTarget.style.display="none"} />
                   </div>
                   <div className={styles.productBody}>
                     <h3>{product.name}</h3>
