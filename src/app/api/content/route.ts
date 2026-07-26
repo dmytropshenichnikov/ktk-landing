@@ -32,7 +32,8 @@ export async function GET() {
           { name: "Ірина Коваль", role: "Благоустрій ділянки", text: "Потрібен був гранодсів і доставка на ділянку. Усе пояснили простими словами, допомогли вибрати потрібний обсяг і привезли у зручний час.", image: "/reviews/review-2.jpg" },
           { name: "Сергій Бондар", role: "Підрядні роботи", text: "Беремо тут шлакоблок, цемент і інколи маніпулятор. Зручно, що можна закрити одразу і товар, і доставку без зайвих дзвінків.", image: "/reviews/review-3.jpg" },
         ];
-        for (const r of defaultReviews) {
+        await seedSql(`DELETE FROM reviews WHERE id NOT IN (SELECT MIN(id) FROM reviews GROUP BY name, text)`).catch(()=>{});
+    for (const r of defaultReviews) {
           await seedSql(`INSERT INTO reviews (name, role, text, image, sort_order) VALUES($1,$2,$3,$4,$5) ON CONFLICT (name, text) DO NOTHING`, [r.name, r.role, r.text, r.image, 0]);
         }
         const defaultServices = [
