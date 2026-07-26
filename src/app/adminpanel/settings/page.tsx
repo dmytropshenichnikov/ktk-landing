@@ -53,7 +53,13 @@ export default function SettingsAdmin() {
 
   return (
     <div>
-      <h1>⚙️ Налаштування сайту</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <h1 style={{ margin: 0 }}>Налаштування сайту</h1>
+        <button onClick={() => { fetch('/api/seed').then(r=>r.json()).then(d=>alert('Дані завантажено! ' + JSON.stringify(d.count))); }}
+          style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#f59e0b", color: "#fff", cursor: "pointer", fontWeight: "bold" }}>
+          Завантажити з файлів у БД
+        </button>
+      </div>
       <div style={{ display: "grid", gap: 15, marginTop: 20 }}>
         {SETTINGS_KEYS.map((s) => (
           <div key={s.key} style={{ background: "#fff", padding: 15, borderRadius: 12 }}>
