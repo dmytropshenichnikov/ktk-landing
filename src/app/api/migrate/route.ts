@@ -12,17 +12,17 @@ export async function GET() {
   }
 
   try {
-    await sql(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_name_text_idx ON reviews (name, text)`);
-    results.push("reviews unique index created");
-  } catch (e: any) {
-    results.push("reviews index error: " + e.message);
-  }
-
-  try {
     await sql(`DELETE FROM reviews WHERE id NOT IN (SELECT MIN(id) FROM reviews GROUP BY name, text)`);
     results.push("review duplicates removed");
   } catch (e: any) {
     results.push("review dedup error: " + e.message);
+  }
+
+  try {
+    await sql(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_name_text_idx ON reviews (name, text)`);
+    results.push("reviews unique index created");
+  } catch (e: any) {
+    results.push("reviews index error: " + e.message);
   }
 
   return NextResponse.json({ success: true, results });
