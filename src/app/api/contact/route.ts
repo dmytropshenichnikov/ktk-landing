@@ -65,6 +65,20 @@ export async function POST(request: Request) {
       }),
     });
 
+    // Also save to database if available
+    try {
+      const { neon } = await import('@neondatabase/serverless');
+      const dbUrl = process.env.DATABASE_URL;
+      if (dbUrl) {
+        const sql = neon(dbUrl);
+        await sql(`INSERT INTO applications (name, phone, email, product, message) VALUES ($1, $2, $3, $4, $5)`, 
+          [name, phone, email, product, message]);
+      }
+    } catch (dbError) {
+      console.error('DB save error:', dbError);
+      // Non-critical - Telegram already sent
+    }
+
     if (!telegramResponse.ok) {
       const error = await telegramResponse.text();
       console.error('Telegram API error:', error);
