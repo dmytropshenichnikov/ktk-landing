@@ -24,10 +24,12 @@ export default function AdminLogin() {
       if (!res.ok) {
         setError(data.error || "Помилка входу");
       } else {
+        // Clear old data and set new
+        localStorage.removeItem("admin_token");
+        localStorage.removeItem("admin_email");
         localStorage.setItem("admin_token", data.token);
-        localStorage.setItem("admin_email", data.email);
-        router.refresh();
-        router.push("/adminpanel/dashboard");
+        localStorage.setItem("admin_email", data.email || data.email);
+        window.location.href = "/adminpanel/dashboard";
       }
     } catch {
       setError("Помилка мережі");

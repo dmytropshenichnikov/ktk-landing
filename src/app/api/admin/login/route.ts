@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { hashPassword, generateToken, verifyLogin } from "@/lib/auth";
-import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
@@ -17,15 +16,10 @@ export async function POST(request: Request) {
     
     const token = generateToken(cleanEmail);
     
-    // Also set cookie for server-side auth
     const response = NextResponse.json({ token, email: cleanEmail });
-    response.cookies.set("admin_token", token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    
+    // Set cookie for server-side auth
+    response.headers.set("Set-Cookie", `admin_token=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`);
     
     return response;
   } catch (e: any) {
