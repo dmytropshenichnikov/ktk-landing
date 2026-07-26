@@ -52,17 +52,6 @@ export async function GET() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
 
-    await sql(`CREATE TABLE IF NOT EXISTS applications (
-      id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL,
-      phone TEXT NOT NULL,
-      email TEXT DEFAULT '',
-      product TEXT DEFAULT '',
-      message TEXT DEFAULT '',
-      status TEXT DEFAULT 'new',
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
-
     // Insert default admin if not exists
     const adminEmail = process.env.ADMIN_EMAIL || "admin@ktk.com.ua";
     const adminPass = process.env.ADMIN_PASSWORD || "ktkadmin2026";

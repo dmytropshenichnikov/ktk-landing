@@ -7,7 +7,6 @@ const TABLES: Record<string, string> = {
   services: "services",
   reviews: "reviews",
   settings: "site_settings",
-  applications: "applications",
 };
 
 function checkAuth(request: Request): boolean {

@@ -60,7 +60,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <a href="/adminpanel/services" style={linkStyle}>🔧 Послуги</a>
           <a href="/adminpanel/reviews" style={linkStyle}>⭐ Відгуки</a>
           <a href="/adminpanel/settings" style={linkStyle}>⚙️ Налаштування</a>
-          <a href="/adminpanel/applications" style={linkStyle}>📋 Заявки</a>
           <hr style={{ borderColor: "#333", margin: "15px 0" }} />
           <button
             onClick={() => { localStorage.removeItem("admin_token"); localStorage.removeItem("admin_email"); window.location.href = "/adminpanel/login"; }}
