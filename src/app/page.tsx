@@ -134,7 +134,7 @@ export default function Home() {
           <div className={styles.headerRow}>
             <a className={styles.brand} href="#hero">
               <span>
-                <strong>{dbSettings.company_name || "ТОВ "КТК""}</strong>
+                <strong>{dbSettings.company_name || "ТОВ \"КТК\""}</strong>
                 <small>Продаж і доставка будівельних матеріалів</small>
               </span>
             </a>
@@ -147,8 +147,8 @@ export default function Home() {
             </nav>
 
             <div className={styles.headerContacts}>
-              <a href={`tel:${dbSettings.phone_raw || "+380503044777"}` onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"</a>
-              <a href={`tel:${dbSettings.phone_raw2 || "+380661102829"}` onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"</a>
+              <a href={("tel:" + (dbSettings.phone_raw || "+380503044777"))} onClick={handlePhoneClick}>{dbSettings.phone_display || "050 304 4777"}</a>
+              <a href={("tel:" + (dbSettings.phone_raw2 || "+380661102829"))} onClick={handlePhoneClick}>{dbSettings.phone_display2 || "066 110 2829"}</a>
             </div>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function Home() {
                   <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
                     Viber
                   </a>
-                  <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
+                  <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
                     WhatsApp
                   </a>
                 </div>
@@ -221,7 +221,7 @@ export default function Home() {
                 />
                 <select id="hero-product" name="product" value={formData.product} onChange={handleChange}>
                   {dbProducts.map((product) => (
-                    <option key={product.id} value={`${product.name} (${product.spec})`}>
+                    <option key={product.id} value={("product.name + " (" + product.spec + ")")}>
                       {product.name} ({product.spec})
                     </option>
                   ))}
@@ -341,7 +341,7 @@ export default function Home() {
                 <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
                   Viber
                 </a>
-                <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
+                <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
                   WhatsApp
                 </a>
               </div>
@@ -382,7 +382,7 @@ export default function Home() {
 
       <footer className={styles.footer}>
         <div className={styles.container}>
-          <p>{dbSettings.company_name || "ТОВ "КТК""}</p>
+          <p>{dbSettings.company_name || "ТОВ \"КТК\""}</p>
           <p>Щебінь, пісок, гранодсів, кільця, шлакоблок</p>
         </div>
       </footer>
@@ -394,7 +394,7 @@ export default function Home() {
         <a href={`viber://chat?number=${encodeURIComponent(dbSettings.phone_raw || "+380503044777")}` target="_blank" rel="noreferrer">
           Viber
         </a>
-        <a href={`https://wa.me/${(dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")}`} target="_blank" rel="noreferrer">
+        <a href={("https://wa.me/" + (dbSettings.phone_raw || "+380503044777").replace(/[^0-9]/g, "").replace(/^0/, "380")")} target="_blank" rel="noreferrer">
           WhatsApp
         </a>
       </div>
