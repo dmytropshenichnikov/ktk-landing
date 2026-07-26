@@ -37,23 +37,42 @@ export default function LandingPage({ initialData }: { initialData: any }) {
   const [status, setStatus] = useState<SubmitStatus>('idle');
   const [errorText, setErrorText] = useState('');
   const [showPhoneMenu, setShowPhoneMenu] = useState(false);
+  const [ready, setReady] = useState(!!initialData);
 
-  // Use server-fetched data first, then update from API in background
-  const [clientData, setClientData] = useState<any>(null);
+  // Fetch from API if server didn't provide data, then show page
+  const [dbData, setDbData] = useState<any>(initialData);
 
   useEffect(() => {
-    fetch('/api/content')
-      .then(r => r.json())
-      .then(data => {
-        if (data?.products || data?.services || data?.reviews || data?.settings) {
-          setClientData(data);
-        }
-      })
-      .catch(() => {});
+    if (!initialData) {
+      fetch('/api/content')
+        .then(r => r.json())
+        .then(data => {
+          if (data?.products || data?.services || data?.reviews || data?.settings) {
+            setDbData(data);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setReady(true));
+    } else {
+      // Create a small delay to ensure smooth transition (images can start loading)
+      const timer = setTimeout(() => setReady(true), 100);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
-  // Use server data first, then client data when available, then fallback
-  const resolvedData = clientData || initialData;
+  if (!ready) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#fff" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: 48, height: 48, border: "4px solid #e5e7eb", borderTopColor: "#22c55e", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 20px" }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+          <p style={{ color: "#666", fontSize: 15 }}>Завантаження...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const resolvedData = dbData;
   const allProducts = resolvedData?.products?.length ? resolvedData.products : fallbackProducts;
   // Hero points from settings (stored as JSON array) or default
   const settings = resolvedData?.settings || {};
