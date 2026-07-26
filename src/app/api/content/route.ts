@@ -1,8 +1,23 @@
 import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 
+async function autoMigrate() {
+  try {
+    await sql(`ALTER TABLE products ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`);
+  } catch (_) {}
+  try {
+    await sql(`DELETE FROM reviews WHERE id NOT IN (SELECT MIN(id) FROM reviews GROUP BY name, text)`);
+  } catch (_) {}
+  try {
+    await sql(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_name_text_idx ON reviews (name, text)`);
+  } catch (_) {}
+}
+
 export async function GET() {
   try {
+    // Auto-migrate on every start
+    await autoMigrate();
+    
     let [products, services, reviews, settings] = await Promise.all([
       sql(`SELECT * FROM products ORDER BY sort_order ASC`),
       sql(`SELECT * FROM services ORDER BY sort_order ASC`),
