@@ -40,6 +40,14 @@ export default function ProductsAdmin() {
     load();
   };
 
+  const toggleActive = async (item: any) => {
+    await fetch("/api/admin/content/products", {
+      method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...item, active: !item.active }),
+    });
+    load();
+  };
+
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
@@ -152,15 +160,19 @@ export default function ProductsAdmin() {
 
       <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
         {items.map((item: any) => (
-          <div key={item.id} style={card}>
+          <div key={item.id} style={{ ...card, opacity: item.active === false ? 0.5 : 1 }}>
             <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
               {item.image && <img src={item.image} alt="" style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover", background: "#eee" }} />}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <strong>{item.name}</strong>
+                {item.active === false && <span style={{ marginLeft: 8, fontSize: 11, background: "#ef4444", color: "#fff", padding: "2px 8px", borderRadius: 10 }}>Приховано</span>}
                 <div style={{ fontSize: 13, color: "#666" }}>{item.price_from} — {item.spec}</div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              <button onClick={() => toggleActive(item)} style={item.active === false ? btnGreen : btnYellow}>
+                {item.active === false ? "Показати" : "Приховати"}
+              </button>
               <button onClick={() => setEdit(item)} style={btnBlue}>Редагувати</button>
               <button onClick={() => del(item.id)} style={btnRed}>Видалити</button>
             </div>

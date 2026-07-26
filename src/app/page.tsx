@@ -68,8 +68,9 @@ export default function Home() {
     );
   }
 
-  // Use DB data if available, else fallback
-  const products = dbData?.products?.length ? dbData.products : fallbackProducts;
+  // Use DB data if available, else fallback - only show active products
+  const allProducts = dbData?.products?.length ? dbData.products : fallbackProducts;
+  const products = allProducts.filter((p: any) => p.active !== false);
   const services = dbData?.services?.length ? dbData.services : fallbackServices;
   const reviews = dbData?.reviews?.length ? dbData.reviews : fallbackReviews;
   const settings = dbData?.settings || {};

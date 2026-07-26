@@ -26,9 +26,12 @@ export async function GET() {
       image TEXT NOT NULL,
       details TEXT[] DEFAULT '{}',
       sort_order INT DEFAULT 0,
+      active BOOLEAN DEFAULT true,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+    // Add active column if missing (migration)
+    await sql(`ALTER TABLE products ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true`).catch(() => {});
 
     await sql(`CREATE TABLE IF NOT EXISTS services (
       id SERIAL PRIMARY KEY,

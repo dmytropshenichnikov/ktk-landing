@@ -42,8 +42,8 @@ export async function GET() {
 
     // Seed products
     for (const p of defaultProducts) {
-      await sql(`INSERT INTO products (slug, name, spec, price_from, description, image, details, sort_order)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (slug) DO NOTHING`,
+      await sql(`INSERT INTO products (slug, name, spec, price_from, description, image, details, sort_order, active)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true) ON CONFLICT (slug) DO NOTHING`,
         [p.slug, p.name, p.spec, p.price_from, p.description, p.image, p.details, 0]);
       count.products++;
     }

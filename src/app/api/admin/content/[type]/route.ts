@@ -64,9 +64,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ typ
     }
     
     if (table === "products") {
-      const r = await sql(`INSERT INTO products (slug, name, spec, price_from, description, image, details, sort_order)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-        [body.slug, body.name, body.spec, body.price_from, body.description, body.image, body.details || [], body.sort_order || 0]);
+      const r = await sql(`INSERT INTO products (slug, name, spec, price_from, description, image, details, sort_order, active)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, COALESCE($9, true)) RETURNING id`,
+        [body.slug, body.name, body.spec, body.price_from, body.description, body.image, body.details || [], body.sort_order || 0, body.active !== false]);
       return NextResponse.json({ success: true, id: r[0]?.id });
     }
     
@@ -110,8 +110,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ type
     }
     
     if (table === "products") {
-      await sql(`UPDATE products SET slug=$1, name=$2, spec=$3, price_from=$4, description=$5, image=$6, details=$7, sort_order=$8, updated_at=NOW() WHERE id=$9`,
-        [data.slug, data.name, data.spec, data.price_from, data.description, data.image, data.details || [], data.sort_order || 0, id]);
+      await sql(`UPDATE products SET slug=$1, name=$2, spec=$3, price_from=$4, description=$5, image=$6, details=$7, sort_order=$8, active=$9, updated_at=NOW() WHERE id=$10`,
+        [data.slug, data.name, data.spec, data.price_from, data.description, data.image, data.details || [], data.sort_order || 0, data.active !== false, id]);
     } else if (table === "services") {
       await sql(`UPDATE services SET slug=$1, name=$2, details=$3, image=$4, meta=$5, sort_order=$6, updated_at=NOW() WHERE id=$7`,
         [data.slug, data.name, data.details, data.image, data.meta || "", data.sort_order || 0, id]);
