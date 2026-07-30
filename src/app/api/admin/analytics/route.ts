@@ -15,131 +15,202 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
-    const period = url.searchParams.get("period") || "all"; // day, week, month, all
+    const period = url.searchParams.get("period") || "month"; // day, week, month, quarter, year, all
     const eventType = url.searchParams.get("event") || ""; // filter by event type
+    const dateFrom = url.searchParams.get("from") || ""; // custom date range
+    const dateTo = url.searchParams.get("to") || "";
 
+    // Build date filter
     let dateFilter = "";
-    if (period === "day") {
+    if (dateFrom && dateTo) {
+      dateFilter = `AND created_at >= '${dateFrom}'::timestamp AND created_at <= '${dateTo}'::timestamp + INTERVAL '1 day'`;
+    } else if (dateFrom) {
+      dateFilter = `AND created_at >= '${dateFrom}'::timestamp`;
+    } else if (dateTo) {
+      dateFilter = `AND created_at <= '${dateTo}'::timestamp + INTERVAL '1 day'`;
+    } else if (period === "day") {
       dateFilter = "AND created_at >= NOW() - INTERVAL '1 day'";
     } else if (period === "week") {
       dateFilter = "AND created_at >= NOW() - INTERVAL '7 days'";
     } else if (period === "month") {
       dateFilter = "AND created_at >= NOW() - INTERVAL '30 days'";
+    } else if (period === "quarter") {
+      dateFilter = "AND created_at >= NOW() - INTERVAL '90 days'";
+    } else if (period === "year") {
+      dateFilter = "AND created_at >= NOW() - INTERVAL '365 days'";
     }
 
     let typeFilter = "";
+    let typeParams: string[] = [];
     if (eventType) {
       typeFilter = "AND event_type = $1";
+      typeParams = [eventType];
     }
 
+    // Helper to run query with or without params
+    const q = async (query: string, params?: string[]) => {
+      const allParams = [...(typeParams || []), ...(params || [])];
+      return sql(query, allParams.length > 0 ? allParams : undefined);
+    };
+
     // Total events count by type
-    const byType = await sql(`
+    const byType = await q(`
       SELECT event_type, COUNT(*) as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY event_type
       ORDER BY count DESC
-    `, eventType ? [eventType] : []);
+    `);
 
-    // Events by day (last 30 days)
-    const byDay = await sql(`
+    // Events by day
+    const byDay = await q(`
       SELECT DATE(created_at) as day, event_type, COUNT(*) as count
       FROM analytics_events
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY DATE(created_at), event_type
       ORDER BY day ASC
     `);
 
-    // Events by hour (last 7 days)
-    const byHour = await sql(`
-      SELECT DATE_TRUNC('hour', created_at) as hour, event_type, COUNT(*) as count
+    // Events by hour of day (0-23) - for heatmap
+    const byHourOfDay = await q(`
+      SELECT EXTRACT(HOUR FROM created_at)::int as hour, event_type, COUNT(*) as count
       FROM analytics_events
-      WHERE created_at >= NOW() - INTERVAL '7 days'
-      GROUP BY DATE_TRUNC('hour', created_at), event_type
+      WHERE 1=1 ${dateFilter} ${typeFilter}
+      GROUP BY EXTRACT(HOUR FROM created_at), event_type
       ORDER BY hour ASC
     `);
 
-    // Product/Service click stats (last 30 days)
-    const byProduct = await sql(`
+    // Events by day of week
+    const byDayOfWeek = await q(`
+      SELECT EXTRACT(DOW FROM created_at)::int as dow, 
+             TO_CHAR(created_at, 'Day') as day_name,
+             event_type, COUNT(*) as count
+      FROM analytics_events
+      WHERE 1=1 ${dateFilter} ${typeFilter}
+      GROUP BY EXTRACT(DOW FROM created_at), TO_CHAR(created_at, 'Day'), event_type
+      ORDER BY dow ASC
+    `);
+
+    // Product/Service click stats
+    const byProduct = await q(`
       SELECT event_data, COUNT(*) as count
       FROM analytics_events
-      WHERE event_type IN ('click_product', 'click_service')
-        AND created_at >= NOW() - INTERVAL '30 days'
+      WHERE event_type IN ('click_product', 'click_service') ${dateFilter}
       GROUP BY event_data
       ORDER BY count DESC
-      LIMIT 20
+      LIMIT 30
     `);
 
     // Application product stats
-    const appProducts = await sql(`
+    const appProducts = await q(`
       SELECT product, COUNT(*) as count
       FROM applications
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      WHERE 1=1 ${dateFilter.replaceAll('created_at', 'applications.created_at')}
       GROUP BY product
       ORDER BY count DESC
-      LIMIT 20
+      LIMIT 30
     `);
 
     // Application status stats
-    const appStatuses = await sql(`
+    const appStatuses = await q(`
       SELECT status, COUNT(*) as count
       FROM applications
       GROUP BY status
       ORDER BY count DESC
     `);
 
-    // Applications by day (last 30 days)
-    const appsByDay = await sql(`
+    // Applications by day
+    const appsByDay = await q(`
       SELECT DATE(created_at) as day, COUNT(*) as count
       FROM applications
-      WHERE created_at >= NOW() - INTERVAL '30 days'
+      WHERE 1=1 ${dateFilter.replaceAll('created_at', 'applications.created_at')}
       GROUP BY DATE(created_at)
       ORDER BY day ASC
     `);
 
     // Phone clicks stats
-    const phoneClicks = await sql(`
+    const phoneClicks = await q(`
       SELECT event_data, COUNT(*) as count
       FROM analytics_events
-      WHERE event_type = 'click_phone'
-        AND created_at >= NOW() - INTERVAL '30 days'
+      WHERE event_type = 'click_phone' ${dateFilter}
       GROUP BY event_data
       ORDER BY count DESC
     `);
 
-    // UTM source stats
-    const utmStats = await sql(`
+    // UTM source + medium + campaign combined
+    const utmStats = await q(`
       SELECT 
         COALESCE(NULLIF(utm_source, ''), 'direct') as source,
+        COALESCE(NULLIF(utm_medium, ''), 'none') as medium,
+        COALESCE(NULLIF(utm_campaign, ''), '-') as campaign,
         COUNT(*) as count
       FROM analytics_events
-      WHERE created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY source
+      WHERE 1=1 ${dateFilter}
+      GROUP BY source, medium, campaign
       ORDER BY count DESC
+      LIMIT 30
+    `);
+
+    // Top referrers
+    const topReferrers = await q(`
+      SELECT 
+        COALESCE(NULLIF(referrer, ''), '(direct)') as referrer,
+        COUNT(*) as count
+      FROM analytics_events
+      WHERE 1=1 ${dateFilter}
+      GROUP BY referrer
+      ORDER BY count DESC
+      LIMIT 15
+    `);
+
+    // Page views stats
+    const pageViews = await q(`
+      SELECT page_url, COUNT(*) as count
+      FROM analytics_events
+      WHERE event_type = 'page_view' ${dateFilter}
+      GROUP BY page_url
+      ORDER BY count DESC
+      LIMIT 10
     `);
 
     // Total counts
-    const total = await sql(`
+    const total = await q(`
       SELECT COUNT(*) as total FROM analytics_events
     `);
 
-    const today = await sql(`
+    const today = await q(`
       SELECT COUNT(*) as today FROM analytics_events
       WHERE created_at >= CURRENT_DATE
+    `);
+
+    // Weekly comparison (this week vs last week)
+    const thisWeek = await q(`
+      SELECT COUNT(*) as count FROM analytics_events
+      WHERE created_at >= DATE_TRUNC('week', NOW()) AND created_at < NOW()
+    `);
+    const lastWeek = await q(`
+      SELECT COUNT(*) as count FROM analytics_events
+      WHERE created_at >= DATE_TRUNC('week', NOW()) - INTERVAL '7 days'
+        AND created_at < DATE_TRUNC('week', NOW())
     `);
 
     return NextResponse.json({
       total: parseInt(total[0]?.total || "0"),
       today: parseInt(today[0]?.today || "0"),
+      thisWeek: parseInt(thisWeek[0]?.count || "0"),
+      lastWeek: parseInt(lastWeek[0]?.count || "0"),
       byType,
       byDay,
-      byHour,
+      byHourOfDay,
+      byDayOfWeek,
       byProduct,
       appProducts,
       appStatuses,
       appsByDay,
       phoneClicks,
       utmStats,
+      topReferrers,
+      pageViews,
     });
   } catch (e: any) {
     console.error("Analytics API error:", e);
