@@ -1,11 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 
+/* ── Типи ─────────────────────────────────────────── */
 type AnalyticsData = {
-  total: number;
-  today: number;
-  thisWeek: number;
-  lastWeek: number;
+  total: number; today: number; thisWeek: number; lastWeek: number;
   byType: { event_type: string; count: number }[];
   byDay: { day: string; event_type: string; count: number }[];
   byHourOfDay: { hour: number; event_type: string; count: number }[];
@@ -20,699 +18,545 @@ type AnalyticsData = {
   pageViews: { page_url: string; count: number }[];
 };
 
-const EVENT_LABELS: Record<string, string> = {
-  click_phone: "📞 Дзвінки",
-  click_viber: "💬 Viber",
-  click_whatsapp: "💬 WhatsApp",
-  click_product: "🛒 Кліки товарів",
-  click_service: "🔧 Кліки послуг",
-  submit_application: "📝 Заявки",
-  page_view: "👁️ Перегляди",
+const LABELS: Record<string, string> = {
+  click_phone: "Дзвінки", click_viber: "Viber", click_whatsapp: "WhatsApp",
+  click_product: "Кліки товарів", click_service: "Кліки послуг",
+  submit_application: "Заявки", page_view: "Перегляди",
 };
 
-const EVENT_COLORS: Record<string, string> = {
-  click_phone: "#3b82f6",
-  click_viber: "#8b5cf6",
-  click_whatsapp: "#22c55e",
-  click_product: "#f59e0b",
-  click_service: "#ef4444",
-  submit_application: "#06b6d4",
-  page_view: "#6366f1",
+const COLORS: Record<string, string> = {
+  click_phone: "#2563eb", click_viber: "#7c3aed", click_whatsapp: "#16a34a",
+  click_product: "#d97706", click_service: "#dc2626",
+  submit_application: "#0891b2", page_view: "#4f46e5",
 };
 
-const DAY_NAMES = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+const DAYS_SHORT = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
+const DAYS_FULL  = ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "Пʼятниця", "Субота"];
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+function fmt(d: string) {
+  return new Date(d).toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+}
+function pct(a: number, b: number) {
+  return b > 0 ? Math.round((a / b) * 100) : 0;
 }
 
+/* ── Компонент ────────────────────────────────────── */
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("month");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [eventFilter, setEventFilter] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [evt, setEvt] = useState("");
+  const [tab, setTab] = useState("overview");
   const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : "";
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       let url = `/api/admin/analytics?period=${period}`;
-      if (dateFrom) url += `&from=${dateFrom}`;
-      if (dateTo) url += `&to=${dateTo}`;
-      if (eventFilter) url += `&event=${eventFilter}`;
+      if (from) url += `&from=${from}`;
+      if (to) url += `&to=${to}`;
+      if (evt) url += `&event=${evt}`;
       const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      const json = await r.json();
-      setData(json);
-    } catch (e) { console.error(e); }
+      setData(await r.json());
+    } catch {}
     setLoading(false);
-  }, [period, dateFrom, dateTo, eventFilter, token]);
+  }, [period, from, to, evt, token]);
 
   useEffect(() => { load(); }, [load]);
 
+  /* агрегація для графіків */
+  const agg = useCallback(() => {
+    if (!data?.byDay) return [];
+    const m: Record<string, Record<string, number>> = {};
+    for (const e of data.byDay) {
+      if (!m[e.day]) m[e.day] = {};
+      m[e.day][e.event_type] = (m[e.day][e.event_type] || 0) + e.count;
+    }
+    return Object.entries(m).map(([d, v]) => ({ day: d, ...v })).sort((a, b) => a.day.localeCompare(b.day));
+  }, [data]);
+
+  const daily = agg();
+  const types = [...new Set(data?.byDay?.map(e => e.event_type) || [])];
+  const maxDay = Math.max(1, ...daily.map(d => types.reduce((s, t) => s + ((d as any)[t] || 0), 0)));
+
+  /* годинна теплова карта */
+  const hrs: Record<number, number> = {};
+  for (let h = 0; h < 24; h++) hrs[h] = 0;
+  if (data?.byHourOfDay) for (const e of data.byHourOfDay) hrs[e.hour] = (hrs[e.hour] || 0) + e.count;
+  const maxHr = Math.max(1, ...Object.values(hrs));
+
+  /* дні тижня */
+  const dows: Record<number, number> = {};
+  for (let d = 0; d < 7; d++) dows[d] = 0;
+  if (data?.byDayOfWeek) for (const e of data.byDayOfWeek) dows[e.dow] = (dows[e.dow] || 0) + e.count;
+  const maxDow = Math.max(1, ...Object.values(dows));
+
+  const wkChg = data?.lastWeek ? Math.round(((data.thisWeek - data.lastWeek) / data.lastWeek) * 100) : 0;
+
   if (loading && !data) return (
-    <div style={{ display: "flex", justifyContent: "center", padding: 80 }}>
-      <div style={{ width: 40, height: 40, border: "4px solid #e5e7eb", borderTopColor: "#22c55e", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+    <div style={{ display: "flex", justifyContent: "center", padding: 100 }}>
+      <div className="spinner" style={{ width: 36, height: 36, border: "4px solid #e5e7eb", borderTopColor: "#22c55e", borderRadius: "50%" }} />
+      <style>{`.spinner { animation: spin .8s linear infinite } @keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 
-  if (!data) return <p style={{ padding: 40, color: "#666" }}>Помилка завантаження даних</p>;
+  const C = (p: { bg?: string; pad?: number; mb?: number; children: any }) => (
+    <div style={{ background: p.bg || "#fff", borderRadius: 12, padding: p.pad ?? 20, marginBottom: p.mb ?? 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
+      {p.children}
+    </div>
+  );
 
-  // Aggregate byDay into chart data
-  const aggregateByDay = () => {
-    if (!data.byDay?.length) return [];
-    const dayMap: Record<string, Record<string, number>> = {};
-    for (const entry of data.byDay) {
-      if (!dayMap[entry.day]) dayMap[entry.day] = {};
-      dayMap[entry.day][entry.event_type] = (dayMap[entry.day][entry.event_type] || 0) + entry.count;
-    }
-    return Object.entries(dayMap)
-      .map(([day, events]) => ({ day, ...events }))
-      .sort((a, b) => a.day.localeCompare(b.day));
-  };
+  const Tab = (p: { id: string; label: string }) => (
+    <button onClick={() => setTab(p.id)}
+      style={{
+        padding: "10px 22px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600,
+        background: tab === p.id ? "#111" : "#f3f4f6", color: tab === p.id ? "#fff" : "#555",
+        transition: "all .2s",
+      }}>{p.label}</button>
+  );
 
-  const dailyData = aggregateByDay();
-  const eventTypes = [...new Set(data.byDay?.map(e => e.event_type) || [])];
-  const maxDailyValue = Math.max(1, ...dailyData.map(d => eventTypes.reduce((sum, et) => sum + ((d as any)[et] || 0), 0)));
+  const Btn = (p: { label: string; active?: boolean; onClick?: () => void; style?: any }) => (
+    <button onClick={p.onClick}
+      style={{ padding: "6px 14px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600,
+        background: p.active ? "#111" : "#f3f4f6", color: p.active ? "#fff" : "#555", transition: "all .15s", ...(p.style || {}) }}>
+      {p.label}
+    </button>
+  );
 
-  // Hour heatmap data
-  const hourData: Record<number, Record<string, number>> = {};
-  for (let h = 0; h < 24; h++) hourData[h] = {};
-  if (data.byHourOfDay) {
-    for (const entry of data.byHourOfDay) {
-      if (!hourData[entry.hour]) hourData[entry.hour] = {};
-      hourData[entry.hour][entry.event_type] = (hourData[entry.hour][entry.event_type] || 0) + entry.count;
-    }
-  }
-  const maxHourValue = Math.max(1, ...Object.values(hourData).map(h => Object.values(h).reduce((a: number, b: number) => a + b, 0)));
+  const Bar = (p: { v: number; max: number; color?: string; h?: number }) => (
+    <div style={{ background: "#f3f4f6", borderRadius: 6, height: p.h ?? 6, overflow: "hidden" }}>
+      <div style={{ width: `${pct(p.v, p.max)}%`, height: "100%", background: p.color || "#2563eb", borderRadius: 6, transition: "width .3s" }} />
+    </div>
+  );
 
-  // Day of week data
-  const dowData: Record<number, Record<string, number>> = {};
-  for (let d = 0; d < 7; d++) dowData[d] = {};
-  if (data.byDayOfWeek) {
-    for (const entry of data.byDayOfWeek) {
-      if (!dowData[entry.dow]) dowData[entry.dow] = {};
-      dowData[entry.dow][entry.event_type] = (dowData[entry.dow][entry.event_type] || 0) + entry.count;
-    }
-  }
-  const maxDowValue = Math.max(1, ...Object.values(dowData).map(d => Object.values(d).reduce((a: number, b: number) => a + b, 0)));
-
-  const weekChange = data.lastWeek > 0 ? Math.round(((data.thisWeek - data.lastWeek) / data.lastWeek) * 100) : data.thisWeek > 0 ? 100 : 0;
-
-  const tabs = [
-    { id: "overview", label: "📊 Огляд" },
-    { id: "events", label: "📋 Події" },
-    { id: "applications", label: "📝 Заявки" },
-    { id: "utm", label: "🌐 Джерела" },
-    { id: "products", label: "🛒 Товари" },
-  ];
+  const Th = (p: { children?: any; align?: string; w?: string }) => (
+    <th style={{ textAlign: (p.align || "left") as any, padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 12, borderBottom: "2px solid #f3f4f6", width: p.w }}>
+      {p.children}
+    </th>
+  );
+  const Td = (p: { children?: any; align?: string; w?: string }) => (
+    <td style={{ textAlign: (p.align || "left") as any, padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f9fafb", width: p.w }}>
+      {p.children}
+    </td>
+  );
 
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-      {/* ===== HEADER ===== */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+    <div style={{ maxWidth: 1200, margin: "0 auto", fontFamily: "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" }}>
+
+      {/* ── Шапка ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>📊 Аналітика</h1>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>Аналітика</h1>
           <p style={{ margin: "4px 0 0", color: "#888", fontSize: 13 }}>
-            {data.total > 0 ? `Всього подій: ${data.total.toLocaleString()}` : "Даних поки що немає. Відвідайте сайт, щоб зібрати статистику."}
+            {data ? `${data.total.toLocaleString()} подій` : "Завантаження..."} · {data ? `сьогодні ${data.today}` : ""}
           </p>
         </div>
       </div>
 
-      {/* ===== PERIOD PICKER + FILTERS ===== */}
-      <div style={{ background: "#fff", borderRadius: 16, padding: "16px 20px", marginBottom: 20, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {(["day", "week", "month", "quarter", "year", "all"] as const).map(p => (
-            <button key={p} onClick={() => { setPeriod(p); setDateFrom(""); setDateTo(""); }}
-              style={{
-                padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-                fontWeight: 600, fontSize: 12, transition: "all 0.2s",
-                background: period === p ? "#22c55e" : "#f3f4f6",
-                color: period === p ? "#fff" : "#555",
-              }}>
-              {p === "day" ? "День" : p === "week" ? "Тиждень" : p === "month" ? "Місяць" : p === "quarter" ? "Квартал" : p === "year" ? "Рік" : "Весь час"}
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: "auto" }}>
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12 }} />
-          <span style={{ color: "#999" }}>—</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-            style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12 }} />
-          <button onClick={load} style={{
-            padding: "7px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-            background: "#3b82f6", color: "#fff", fontWeight: 600, fontSize: 12,
-          }}>Застосувати</button>
-        </div>
-        <select value={eventFilter} onChange={e => setEventFilter(e.target.value)}
-          style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #d1d5db", fontSize: 12, background: "#fff" }}>
+      {/* ── Фільтри ── */}
+      <div style={{ background: "#fff", borderRadius: 12, padding: "14px 18px", marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,.06)", display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+        {(["day","week","month","quarter","year","all"] as const).map(p => (
+          <Btn key={p} label={p==="day"?"День":p==="week"?"Тиждень":p==="month"?"Місяць":p==="quarter"?"Квартал":p==="year"?"Рік":"Весь час"}
+            active={period === p && !from && !to} onClick={() => { setPeriod(p); setFrom(""); setTo(""); }} />
+        ))}
+        <input type="date" value={from} onChange={e => setFrom(e.target.value)}
+          style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13 }} />
+        <input type="date" value={to} onChange={e => setTo(e.target.value)}
+          style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13 }} />
+        <Btn label="OK" onClick={load} style={{ background: "#2563eb", color: "#fff" }} />
+        <select value={evt} onChange={e => setEvt(e.target.value)}
+          style={{ padding: "6px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, background: "#fff" }}>
           <option value="">Всі події</option>
-          {Object.entries(EVENT_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
+          {Object.entries(LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
 
-      {/* ===== TABS ===== */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 20, flexWrap: "wrap" }}>
-        {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer",
-              fontWeight: 600, fontSize: 14, transition: "all 0.2s",
-              background: activeTab === tab.id ? "#fff" : "transparent",
-              color: activeTab === tab.id ? "#333" : "#888",
-              boxShadow: activeTab === tab.id ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-            }}>
-            {tab.label}
-          </button>
-        ))}
+      {/* ── Таби ── */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+        <Tab id="overview" label="Огляд" />
+        <Tab id="events" label="Події" />
+        <Tab id="applications" label="Заявки" />
+        <Tab id="sources" label="Джерела" />
+        <Tab id="products" label="Товари та послуги" />
       </div>
 
-      {/* ============================================== */}
-      {/* TAB: OVERVIEW */}
-      {/* ============================================== */}
-      {activeTab === "overview" && (
-        <>
-          {/* KPI Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12, marginBottom: 24 }}>
-            <div style={{ background: "#fff", borderRadius: 12, padding: "16px 20", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>Сьогодні</p>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "#22c55e" }}>{data.today}</p>
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB: ОГЛЯД */}
+      {/* ════════════════════════════════════════════════ */}
+      {tab === "overview" && <>
+        {/* KPI */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12, marginBottom: 16 }}>
+          {[
+            { label: "Сьогодні", val: data?.today ?? 0, color: "#16a34a" },
+            { label: "Цей тиждень", val: data?.thisWeek ?? 0, color: "#2563eb" },
+            { label: "Минулий тиждень", val: data?.lastWeek ?? 0, color: "#6b7280" },
+            { label: "Зміна", val: `${wkChg > 0 ? "+" : ""}${wkChg}%`, color: wkChg >= 0 ? "#16a34a" : "#dc2626" },
+          ].map(c => (
+            <div key={c.label} style={{ background: "#fff", borderRadius: 12, padding: "20px 24px", boxShadow: "0 1px 3px rgba(0,0,0,.06)" }}>
+              <p style={{ margin: "0 0 6px", fontSize: 13, color: "#888" }}>{c.label}</p>
+              <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: c.color }}>{c.val}</p>
             </div>
-            <div style={{ background: "#fff", borderRadius: 12, padding: "16px 20", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>Цей тиждень</p>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "#3b82f6" }}>{data.thisWeek}</p>
-            </div>
-            <div style={{ background: "#fff", borderRadius: 12, padding: "16px 20", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>Минулий тиждень</p>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: "#888" }}>{data.lastWeek}</p>
-            </div>
-            <div style={{ background: "#fff", borderRadius: 12, padding: "16px 20", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-              <p style={{ margin: "0 0 4px", fontSize: 12, color: "#888" }}>Зміна</p>
-              <p style={{ margin: 0, fontSize: 28, fontWeight: 700, color: weekChange >= 0 ? "#22c55e" : "#ef4444" }}>
-                {weekChange > 0 ? "+" : ""}{weekChange}%
-              </p>
-            </div>
-          </div>
+          ))}
+        </div>
 
-          {/* By Type Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginBottom: 24 }}>
-            {data.byType.map(et => (
+        {/* По типах */}
+        <C mb={16}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(165px, 1fr))", gap: 10 }}>
+            {data?.byType.map(et => (
               <div key={et.event_type} style={{
-                background: EVENT_COLORS[et.event_type] ? `${EVENT_COLORS[et.event_type]}12` : "#f9fafb",
-                padding: "16px 20px", borderRadius: 12,
-                border: EVENT_COLORS[et.event_type] ? `1px solid ${EVENT_COLORS[et.event_type]}25` : "1px solid #e5e7eb",
+                background: COLORS[et.event_type] ? `${COLORS[et.event_type]}0d` : "#f9fafb",
+                padding: "18px 20px", borderRadius: 10,
+                border: COLORS[et.event_type] ? `1px solid ${COLORS[et.event_type]}20` : "1px solid #e5e7eb",
               }}>
-                <p style={{ margin: "0 0 4px", fontSize: 12, color: "#666" }}>
-                  {EVENT_LABELS[et.event_type] || et.event_type}
-                </p>
-                <p style={{ margin: 0, fontSize: 26, fontWeight: 700, color: EVENT_COLORS[et.event_type] || "#333" }}>
-                  {et.count}
-                </p>
+                <p style={{ margin: "0 0 6px", fontSize: 13, color: "#666" }}>{LABELS[et.event_type] || et.event_type}</p>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 700, color: COLORS[et.event_type] || "#333" }}>{et.count}</p>
               </div>
             ))}
           </div>
+        </C>
 
-          {/* Chart - Events by Day */}
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Активність по днях</h2>
-              <span style={{ fontSize: 12, color: "#999" }}>max: {maxDailyValue}</span>
-            </div>
-            <div style={{ position: "relative", height: 200, display: "flex", alignItems: "flex-end", gap: 2, paddingBottom: 20 }}>
-              {dailyData.length === 0 && (
-                <p style={{ color: "#ccc", textAlign: "center", width: "100%", margin: 0 }}>Немає даних за цей період</p>
-              )}
-              {dailyData.map((d, i) => {
-                const dayTotal = eventTypes.reduce((sum, et) => sum + ((d as any)[et] || 0), 0);
-                const pct = maxDailyValue > 0 ? (dayTotal / maxDailyValue) * 100 : 0;
-                return (
-                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}
-                    title={`${d.day}: ${dayTotal} подій`}>
-                    <div style={{
-                      width: "100%", maxWidth: 36, height: `${pct}%`,
-                      background: "linear-gradient(180deg, #4ade80, #16a34a)",
-                      borderRadius: "4px 4px 0 0", minHeight: dayTotal > 0 ? 4 : 0,
-                      transition: "height 0.3s",
-                    }} />
-                    {dailyData.length <= 31 && (
-                      <span style={{ fontSize: 8, color: "#bbb", marginTop: 4, transform: i % 2 === 0 ? "none" : "translateY(4px)" }}>
-                        {formatDate(d.day)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {eventTypes.length > 1 && (
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8, borderTop: "1px solid #f3f4f6", paddingTop: 12 }}>
-                {eventTypes.filter(et => EVENT_LABELS[et]).map(et => (
-                  <span key={et} style={{ fontSize: 11, color: "#666", display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: EVENT_COLORS[et] || "#999", display: "inline-block" }} />
-                    {EVENT_LABELS[et] || et}
-                  </span>
-                ))}
-              </div>
-            )}
+        {/* Графік по днях */}
+        <C mb={16}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Активність по днях</h2>
+            <span style={{ fontSize: 12, color: "#aaa" }}>макс: {maxDay}</span>
           </div>
+          <div style={{ position: "relative", height: 200, display: "flex", alignItems: "flex-end", gap: 3, paddingBottom: 22 }}>
+            {daily.map((d, i) => {
+              const t = types.reduce((s, et) => s + ((d as any)[et] || 0), 0);
+              const p = pct(t, maxDay);
+              return (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}
+                  title={`${d.day}: ${t}`}>
+                  <div style={{ width: "100%", maxWidth: 32, height: `${p}%`, background: "linear-gradient(180deg,#4ade80,#16a34a)", borderRadius: "4px 4px 0 0", minHeight: t > 0 ? 4 : 0, transition: "height .3s" }} />
+                  {daily.length <= 31 && <span style={{ fontSize: 8, color: "#bbb", marginTop: 4 }}>{fmt(d.day)}</span>}
+                </div>
+              );
+            })}
+            {daily.length === 0 && <p style={{ color: "#ccc", textAlign: "center", width: "100%", margin: 0 }}>Немає даних за цей період</p>}
+          </div>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", borderTop: "1px solid #f3f4f6", paddingTop: 10 }}>
+            {types.filter(t => LABELS[t]).map(t => (
+              <span key={t} style={{ fontSize: 12, color: "#666", display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS[t] || "#999", display: "inline-block" }} />
+                {LABELS[t]}
+              </span>
+            ))}
+          </div>
+        </C>
 
-          {/* Heatmap: Hour of Day */}
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>🕐 Активність по годинах</h2>
-            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 140, padding: "0 0 24px" }}>
+        {/* Теплова карта годин */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <C>
+            <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600 }}>Активність по годинах</h2>
+            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 120 }}>
               {Array.from({ length: 24 }, (_, h) => {
-                const total = Object.values(hourData[h]).reduce((a: number, b: number) => a + b, 0);
-                const pct = maxHourValue > 0 ? (total / maxHourValue) * 100 : 0;
+                const p = pct(hrs[h], maxHr);
                 return (
-                  <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
-                    title={`${h}:00 - ${total} подій`}>
-                    <div style={{
-                      width: "100%", height: `${pct}%`,
-                      background: total > 0 ? `rgba(59, 130, 246, ${0.2 + (pct / 100) * 0.8})` : "#f3f4f6",
-                      borderRadius: "3px 3px 0 0", minHeight: total > 0 ? 3 : 0,
-                    }} />
+                  <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${h}:00 — ${hrs[h]}`}>
+                    <div style={{ width: "100%", height: `${p}%`, background: hrs[h] > 0 ? `rgba(37,99,235,${.15 + p/100 * .85})` : "#f3f4f6", borderRadius: "3px 3px 0 0", minHeight: hrs[h] > 0 ? 3 : 0 }} />
                     <span style={{ fontSize: 7, color: "#bbb", marginTop: 2 }}>{h}</span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </C>
 
-          {/* Day of Week */}
-          <div style={{ background: "#fff", borderRadius: 16, padding: 24, marginBottom: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 600 }}>📅 Активність по днях тижня</h2>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 160, padding: "0 0 24px" }}>
+          {/* Дні тижня */}
+          <C>
+            <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600 }}>Активність по днях тижня</h2>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 130 }}>
               {Array.from({ length: 7 }, (_, d) => {
-                const total = Object.values(dowData[d]).reduce((a: number, b: number) => a + b, 0);
-                const pct = maxDowValue > 0 ? (total / maxDowValue) * 100 : 0;
+                const p = pct(dows[d], maxDow);
                 return (
-                  <div key={d} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
-                    title={`${DAY_NAMES[d]}: ${total} подій`}>
-                    <div style={{
-                      width: "100%", maxWidth: 50, height: `${pct}%`,
-                      background: "linear-gradient(180deg, #a78bfa, #7c3aed)",
-                      borderRadius: "6px 6px 0 0", minHeight: total > 0 ? 4 : 0,
-                    }} />
-                    <span style={{ fontSize: 10, color: "#888", marginTop: 6, fontWeight: 600 }}>{DAY_NAMES[d]}</span>
-                    <span style={{ fontSize: 11, color: "#555", fontWeight: 600 }}>{total}</span>
+                  <div key={d} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${DAYS_FULL[d]}: ${dows[d]}`}>
+                    <div style={{ width: "100%", maxWidth: 44, height: `${p}%`, background: "linear-gradient(180deg,#a78bfa,#7c3aed)", borderRadius: "6px 6px 0 0", minHeight: dows[d] > 0 ? 4 : 0 }} />
+                    <span style={{ fontSize: 10, color: "#888", marginTop: 6, fontWeight: 600 }}>{DAYS_SHORT[d]}</span>
+                    <span style={{ fontSize: 11, color: "#333", fontWeight: 600 }}>{dows[d]}</span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </C>
+        </div>
 
-          {/* Quick links */}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 8 }}>
-            <a href="/adminpanel/applications" style={{ padding: "10px 20px", borderRadius: 10, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>
-              📝 Всі заявки →
-            </a>
-            <a href="/api/admin/analytics/export?type=events&period=month" target="_blank" style={{ padding: "10px 20px", borderRadius: 10, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>
-              ⬇ Експорт CSV (події)
-            </a>
-            <a href="/api/admin/analytics/export?type=applications&period=month" target="_blank" style={{ padding: "10px 20px", borderRadius: 10, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>
-              ⬇ Експорт CSV (заявки)
-            </a>
-          </div>
-        </>
-      )}
+        {/* Експорт */}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <a href="/adminpanel/applications" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Всі заявки →</a>
+          <a href="/api/admin/analytics/export?type=events" target="_blank" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (події)</a>
+          <a href="/api/admin/analytics/export?type=applications" target="_blank" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (заявки)</a>
+        </div>
+      </>}
 
-      {/* ============================================== */}
-      {/* TAB: EVENTS */}
-      {/* ============================================== */}
-      {activeTab === "events" && (
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB: ПОДІЇ */}
+      {/* ════════════════════════════════════════════════ */}
+      {tab === "events" && <>
+        <C>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>📋 Детальна статистика подій</h2>
-            <a href="/api/admin/analytics/export?type=events" target="_blank"
-              style={{ padding: "8px 16px", borderRadius: 8, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>
-              ⬇ CSV
-            </a>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Детальна статистика подій</h2>
+            <a href="/api/admin/analytics/export?type=events" target="_blank" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>CSV</a>
           </div>
-
-          {/* Summary table by type */}
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                  <th style={{ textAlign: "left", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 12 }}>Тип події</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 12 }}>Всього</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 12 }}>%</th>
-                  <th style={{ textAlign: "right", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 12 }}>Сьогодні</th>
-                </tr>
+                <tr><Th>Тип події</Th><Th align="right">Всього</Th><Th align="right">Частка</Th></tr>
               </thead>
               <tbody>
-                {data.byType.map(et => {
-                  const pct = data.total > 0 ? Math.round((et.count / data.total) * 100) : 0;
-                  return (
-                    <tr key={et.event_type} style={{ borderBottom: "1px solid #f9fafb" }}>
-                      <td style={{ padding: "10px 12px" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: EVENT_COLORS[et.event_type] || "#999" }} />
-                          {EVENT_LABELS[et.event_type] || et.event_type}
-                        </span>
-                      </td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{et.count}</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right", color: "#888" }}>{pct}%</td>
-                      <td style={{ padding: "10px 12px", textAlign: "right" }}>-</td>
-                    </tr>
-                  );
-                })}
+                {data?.byType.map(et => (
+                  <tr key={et.event_type}>
+                    <Td><span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: COLORS[et.event_type] || "#999" }} />
+                      {LABELS[et.event_type] || et.event_type}
+                    </span></Td>
+                    <Td align="right"><span style={{ fontWeight: 600 }}>{et.count}</span></Td>
+                    <Td align="right"><span style={{ color: "#888" }}>{pct(et.count, data?.total || 1)}%</span></Td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
+        </C>
 
-          {/* Products & Services table */}
-          {data.byProduct.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>🛒 Кліки по товарах та послугах</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Назва</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Кліків</th>
-                      <th style={{ padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.byProduct.slice(0, 15).map((item, i) => {
-                      const max = Math.max(...data.byProduct.map(p => p.count));
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                          <td style={{ padding: "8px 12px" }}>{item.event_data}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                          <td style={{ padding: "8px 12px", width: "40%" }as any}>
-                            <div style={{ background: "#f3f4f6", borderRadius: 6, height: 6, overflow: "hidden" }}>
-                              <div style={{ width: `${(item.count / max) * 100}%`, height: "100%", background: "#f59e0b", borderRadius: 6 }} />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {data?.byProduct && data.byProduct.length > 0 && <C>
+          <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 600 }}>Товари та послуги (кліки)</h3>
+          <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr><Th w="50%">Назва</Th><Th align="right" w="60">Кліків</Th><Th w="40%"></Th></tr></thead>
+              <tbody>
+                {data.byProduct.map((it, i) => (
+                  <tr key={i}>
+                    <Td>{it.event_data}</Td>
+                    <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                    <Td><Bar v={it.count} max={Math.max(...data.byProduct.map(p => p.count))} color="#d97706" /></Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </C>}
 
-      {/* ============================================== */}
-      {/* TAB: APPLICATIONS */}
-      {/* ============================================== */}
-      {activeTab === "applications" && (
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+        {data?.phoneClicks && data.phoneClicks.length > 0 && <C>
+          <h3 style={{ margin: "0 0 14px", fontSize: 15, fontWeight: 600 }}>Дзвінки (натискання на телефон)</h3>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><Th>Номер</Th><Th align="right">Натискань</Th><Th w="30%"></Th></tr></thead>
+              <tbody>
+                {data.phoneClicks.map((it, i) => (
+                  <tr key={i}>
+                    <Td>{it.event_data}</Td>
+                    <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                    <Td><Bar v={it.count} max={Math.max(...data.phoneClicks.map(p => p.count))} color="#2563eb" /></Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </C>}
+      </>}
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB: ЗАЯВКИ */}
+      {/* ════════════════════════════════════════════════ */}
+      {tab === "applications" && <>
+        <C>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>📝 Аналітика заявок</h2>
-            <div style={{ display: "flex", gap: 8 }}>
-              <a href="/adminpanel/applications" style={{ padding: "8px 16px", borderRadius: 8, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>
-                Всі заявки →
-              </a>
-              <a href="/api/admin/analytics/export?type=applications" target="_blank"
-                style={{ padding: "8px 16px", borderRadius: 8, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>
-                ⬇ CSV
-              </a>
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Аналітика заявок</h2>
+            <div style={{ display: "flex", gap: 8 }}>              
+              <a href="/adminpanel/applications" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>Всі заявки →</a>
+              <a href="/api/admin/analytics/export?type=applications" target="_blank" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>CSV</a>
             </div>
           </div>
 
-          {/* Statuses */}
-          <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>📊 Статуси</h3>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-              {data.appStatuses.map(item => {
-                const total = data.appStatuses.reduce((sum, s) => sum + s.count, 0);
-                const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
-                const sc: Record<string, string> = { new: "#3b82f6", read: "#8b5cf6", contacted: "#f59e0b", sent: "#22c55e", completed: "#16a34a", cancelled: "#ef4444" };
-                const sl: Record<string, string> = { new: "Нова", read: "Прочитана", contacted: "Зв'язались", sent: "Відправлено", completed: "Завершено", cancelled: "Скасовано" };
+          <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Статуси</h3>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
+            {data?.appStatuses.map(it => {
+              const t = data.appStatuses.reduce((s, x) => s + x.count, 0);
+              const sc: Record<string, string> = { new: "#2563eb", read: "#7c3aed", contacted: "#d97706", sent: "#16a34a", completed: "#059669", cancelled: "#dc2626" };
+              const sl: Record<string, string> = { new: "Нова", read: "Прочитана", contacted: "Зв'язались", sent: "Відправлено", completed: "Завершено", cancelled: "Скасовано" };
+              return (
+                <div key={it.status} style={{ display: "flex", alignItems: "center", gap: 8, background: "#f9fafb", padding: "8px 16px", borderRadius: 8 }}>
+                  <span style={{ width: 10, height: 10, borderRadius: "50%", background: sc[it.status] || "#999" }} />
+                  <span style={{ fontSize: 13 }}>{sl[it.status] || it.status}:</span>
+                  <strong style={{ fontSize: 14 }}>{it.count} ({pct(it.count, t)}%)</strong>
+                </div>
+              );
+            })}
+          </div>
+
+          {data?.appProducts && data.appProducts.length > 0 && <>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Заявки по товарах</h3>
+            <div style={{ overflowX: "auto", marginBottom: 24 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr><Th w="60%">Товар</Th><Th align="right" w="60">Заявок</Th><Th w="30%"></Th></tr></thead>
+                <tbody>
+                  {data.appProducts.map((it, i) => (
+                    <tr key={i}>
+                      <Td>{it.product}</Td>
+                      <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                      <Td><Bar v={it.count} max={Math.max(...data.appProducts.map(p => p.count))} color="#0891b2" /></Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>}
+
+          {data?.appsByDay && data.appsByDay.length > 0 && <>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Динаміка заявок по днях</h3>
+            <div style={{ height: 180, display: "flex", alignItems: "flex-end", gap: 4, paddingBottom: 24 }}>
+              {data.appsByDay.map((it, i) => {
+                const mx = Math.max(...data.appsByDay.map(a => a.count));
+                const p = pct(it.count, mx);
                 return (
-                  <div key={item.status} style={{ display: "flex", alignItems: "center", gap: 8, background: "#f9fafb", padding: "8px 16px", borderRadius: 10 }}>
-                    <span style={{ width: 10, height: 10, borderRadius: "50%", background: sc[item.status] || "#999" }} />
-                    <span style={{ fontSize: 13 }}>{sl[item.status] || item.status}:</span>
-                    <strong style={{ fontSize: 14 }}>{item.count} ({pct}%)</strong>
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${it.day}: ${it.count}`}>
+                    <div style={{
+                      width: "100%", maxWidth: 36, height: `${p}%`,
+                      background: "linear-gradient(180deg, #22d3ee, #0891b2)",
+                      borderRadius: "4px 4px 0 0", minHeight: it.count > 0 ? 4 : 0,
+                    }} />
+                    <span style={{ fontSize: 9, color: "#999", marginTop: 4, whiteSpace: "nowrap" }}>
+                      {it.day?.slice(5)}
+                    </span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </>}
+        </C>
+      </>}
 
-          {/* Products in applications */}
-          {data.appProducts.length > 0 && (
-            <div style={{ marginBottom: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>📦 Заявки по товарах</h3>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Товар</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Заявок</th>
-                      <th style={{ padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.appProducts.map((item, i) => {
-                      const max = Math.max(...data.appProducts.map(p => p.count));
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                          <td style={{ padding: "8px 12px" }}>{item.product}</td>
-                          <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                          <td style={{ padding: "8px 12px" } as any}>
-                            <div style={{ background: "#f3f4f6", borderRadius: 6, height: 6, overflow: "hidden" }}>
-                              <div style={{ width: `${(item.count / max) * 100}%`, height: "100%", background: "#06b6d4", borderRadius: 6 }} />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB: ДЖЕРЕЛА */}
+      {/* ════════════════════════════════════════════════ */}
+      {tab === "sources" && <>
+        <C>
+          <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 600 }}>Звідки приходять відвідувачі</h2>
 
-          {/* Applications by Day */}
-          {data.appsByDay.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>📈 Динаміка заявок</h3>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 120, paddingBottom: 20 }}>
-                {data.appsByDay.map((item, i) => {
-                  const max = Math.max(...data.appsByDay.map(a => a.count));
-                  const pct = max > 0 ? (item.count / max) * 100 : 0;
-                  return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}
-                      title={`${item.day}: ${item.count} заявок`}>
-                      <div style={{
-                        width: "100%", maxWidth: 24, height: `${pct}%`,
-                        background: "linear-gradient(180deg, #22d3ee, #0891b2)",
-                        borderRadius: "3px 3px 0 0", minHeight: item.count > 0 ? 3 : 0,
-                      }} />
-                      <span style={{ fontSize: 7, color: "#bbb", marginTop: 2 }}>{item.day?.slice(5)}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ============================================== */}
-      {/* TAB: UTM / SOURCES */}
-      {/* ============================================== */}
-      {activeTab === "utm" && (
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h2 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 600 }}>🌐 Звідки приходять відвідувачі</h2>
-
-          {data.utmStats.length === 0 ? (
-            <p style={{ color: "#999", textAlign: "center", padding: 40 }}>
-              Немає даних про джерела. Дані з'являться, коли відвідувачі будуть переходити на сайт з UTM-мітками (реклама, соцмережі).
-            </p>
-          ) : (
-            <>
-              <div style={{ overflowX: "auto", marginBottom: 24 }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Джерело</th>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Тип</th>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Кампанія</th>
-                      <th style={{ textAlign: "right", padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Переходів</th>
-                      <th style={{ padding: "10px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.utmStats.map((item, i) => {
-                      const max = Math.max(...data.utmStats.map(u => u.count));
-                      const sourceLabels: Record<string, string> = {
-                        direct: "🔄 Прямий", google: "🔍 Google", facebook: "📘 Facebook",
-                        instagram: "📷 Instagram", olx: "🛒 OLX",
-                      };
-                      return (
-                        <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                          <td style={{ padding: "10px 12px" }}>
-                            <span style={{ fontWeight: 500 }}>{sourceLabels[item.source] || item.source}</span>
-                          </td>
-                          <td style={{ padding: "10px 12px", color: "#888" }}>{item.medium}</td>
-                          <td style={{ padding: "10px 12px", color: "#888" }}>{item.campaign}</td>
-                          <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                          <td style={{ padding: "10px 12px" } as any}>
-                            <div style={{ background: "#f3f4f6", borderRadius: 6, height: 6, overflow: "hidden" }}>
-                              <div style={{ width: `${(item.count / max) * 100}%`, height: "100%", background: "#8b5cf6", borderRadius: 6 }} />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Chart */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160, paddingBottom: 20 }}>
-                {data.utmStats.slice(0, 8).map((item, i) => {
-                  const max = Math.max(...data.utmStats.map(u => u.count));
-                  const pct = max > 0 ? (item.count / max) * 100 : 0;
-                  const colors = ["#8b5cf6", "#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#6366f1"];
-                  return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                      <div style={{
-                        width: "100%", maxWidth: 50, height: `${pct}%`,
-                        background: colors[i % colors.length],
-                        borderRadius: "6px 6px 0 0", minHeight: item.count > 0 ? 4 : 0,
-                      }} />
-                      <span style={{ fontSize: 9, color: "#888", marginTop: 6, textAlign: "center", lineHeight: 1.2 }}>
-                        {item.source}<br/>{item.count}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Referrers */}
-          {data.topReferrers?.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>🔗 Звідки переходять (Referrers)</h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                    <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Джерело</th>
-                    <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Переходів</th>
-                    <th style={{ padding: "8px 12px" }}></th>
-                  </tr>
-                </thead>
+          {data?.utmStats && data.utmStats.length > 0 ? <>
+            <div style={{ overflowX: "auto", marginBottom: 20 }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr><Th>Джерело</Th><Th>Тип</Th><Th>Кампанія</Th><Th align="right">Переходів</Th><Th w="30%"></Th></tr></thead>
                 <tbody>
-                  {data.topReferrers.map((item, i) => {
-                    const max = Math.max(...data.topReferrers.map(r => r.count));
+                  {data.utmStats.map((it, i) => {
+                    const mx = Math.max(...data.utmStats.map(u => u.count));
+                    const ls: Record<string, string> = { direct: "Прямий", google: "Google", facebook: "Facebook", instagram: "Instagram", olx: "OLX" };
                     return (
-                      <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                        <td style={{ padding: "8px 12px", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {item.referrer === "(direct)" ? "🔄 Прямий перехід" : item.referrer}
-                        </td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                        <td style={{ padding: "8px 12px" } as any}>
-                          <div style={{ background: "#f3f4f6", borderRadius: 6, height: 6, overflow: "hidden" }}>
-                            <div style={{ width: `${(item.count / max) * 100}%`, height: "100%", background: "#6366f1", borderRadius: 6 }} />
-                          </div>
-                        </td>
+                      <tr key={i}>
+                        <Td><span style={{ fontWeight: 500 }}>{ls[it.source] || it.source}</span></Td>
+                        <Td><span style={{ color: "#888" }}>{it.medium}</span></Td>
+                        <Td><span style={{ color: "#888" }}>{it.campaign}</span></Td>
+                        <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                        <Td><Bar v={it.count} max={mx} color="#7c3aed" /></Td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* ============================================== */}
-      {/* TAB: PRODUCTS */}
-      {/* ============================================== */}
-      {activeTab === "products" && (
-        <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-          <h2 style={{ margin: "0 0 20px", fontSize: 18, fontWeight: 600 }}>🛒 Які товари цікавлять клієнтів</h2>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 160 }}>
+              {data.utmStats.slice(0, 10).map((it, i) => {
+                const mx = Math.max(...data.utmStats.map(u => u.count));
+                const p = pct(it.count, mx);
+                const pal = ["#7c3aed","#2563eb","#16a34a","#d97706","#dc2626","#0891b2","#ec4899","#4f46e5","#ea580c","#65a30d"];
+                return (
+                  <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <div style={{ width: "100%", maxWidth: 48, height: `${p}%`, background: pal[i % pal.length], borderRadius: "6px 6px 0 0", minHeight: it.count > 0 ? 4 : 0 }} />
+                    <span style={{ fontSize: 9, color: "#888", marginTop: 4, textAlign: "center", lineHeight: 1.2 }}>{it.source}<br/>{it.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </> : <p style={{ color: "#999", textAlign: "center", padding: 40, fontSize: 14 }}>
+            Дані про джерела з'являться, коли відвідувачі будуть переходити на сайт з UTM-мітками (реклама, соцмережі тощо).
+          </p>}
+
+          {data?.topReferrers && data.topReferrers.length > 0 && <div style={{ marginTop: 24 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Зовнішні посилання (Referrers)</h3>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr><Th>Джерело</Th><Th align="right">Переходів</Th><Th w="30%"></Th></tr></thead>
+              <tbody>
+                {data.topReferrers.map((it, i) => (
+                  <tr key={i}>
+                    <Td>{it.referrer === "(direct)" ? "Прямий перехід" : it.referrer}</Td>
+                    <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                    <Td><Bar v={it.count} max={Math.max(...data.topReferrers.map(r => r.count))} color="#4f46e5" /></Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>}
+        </C>
+      </>}
+
+      {/* ════════════════════════════════════════════════ */}
+      {/* TAB: ТОВАРИ ТА ПОСЛУГИ */}
+      {/* ════════════════════════════════════════════════ */}
+      {tab === "products" && <>
+        <C>
+          <h2 style={{ margin: "0 0 20px", fontSize: 16, fontWeight: 600 }}>Які товари цікавлять клієнтів</h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
-            {/* Product clicks */}
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Кліки "Уточнити ціну"</h3>
-              {data.byProduct.length === 0 ? (
-                <p style={{ color: "#ccc" }}>Немає даних</p>
-              ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Товар/Послуга</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Кліків</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.byProduct.map((item, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                        <td style={{ padding: "8px 12px" }}>{item.event_data}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Кліки по товарах</h3>
+              {data?.byProduct && data.byProduct.length > 0 ? (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead><tr><Th>Товар / Послуга</Th><Th align="right">Кліків</Th></tr></thead>
+                    <tbody>
+                      {data.byProduct.map((it, i) => (
+                        <tr key={i}><Td>{it.event_data}</Td><Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p style={{ color: "#ccc", fontSize: 13 }}>Немає даних</p>}
             </div>
 
-            {/* Application products */}
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Фактичні заявки по товарах</h3>
-              {data.appProducts.length === 0 ? (
-                <p style={{ color: "#ccc" }}>Немає даних</p>
-              ) : (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                      <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Товар</th>
-                      <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Заявок</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.appProducts.map((item, i) => (
-                      <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                        <td style={{ padding: "8px 12px" }}>{item.product}</td>
-                        <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Фактичні заявки</h3>
+              {data?.appProducts && data.appProducts.length > 0 ? (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead><tr><Th>Товар</Th><Th align="right">Заявок</Th></tr></thead>
+                    <tbody>
+                      {data.appProducts.map((it, i) => (
+                        <tr key={i}><Td>{it.product}</Td><Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p style={{ color: "#ccc", fontSize: 13 }}>Немає даних</p>}
             </div>
           </div>
 
-          {/* Phone clicks */}
-          {data.phoneClicks.length > 0 && (
-            <div>
-              <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>📞 Натискання на телефони</h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                <thead>
-                  <tr style={{ borderBottom: "2px solid #f3f4f6" }}>
-                    <th style={{ textAlign: "left", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Номер</th>
-                    <th style={{ textAlign: "right", padding: "8px 12px", color: "#888", fontWeight: 600, fontSize: 11 }}>Натискань</th>
-                  </tr>
-                </thead>
+          {data?.phoneClicks && data.phoneClicks.length > 0 && <div>
+            <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Натискання на телефони</h3>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead><tr><Th>Номер</Th><Th align="right">Натискань</Th><Th w="30%"></Th></tr></thead>
                 <tbody>
-                  {data.phoneClicks.map((item, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #f9fafb" }}>
-                      <td style={{ padding: "8px 12px" }}>{item.event_data || "Номер"}</td>
-                      <td style={{ padding: "8px 12px", textAlign: "right", fontWeight: 600 }}>{item.count}</td>
+                  {data.phoneClicks.map((it, i) => (
+                    <tr key={i}>
+                      <Td><span style={{ fontWeight: 500 }}>{it.event_data || "Номер"}</span></Td>
+                      <Td align="right"><span style={{ fontWeight: 600 }}>{it.count}</span></Td>
+                      <Td><Bar v={it.count} max={Math.max(...data.phoneClicks.map(p => p.count))} color="#2563eb" /></Td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-      )}
+          </div>}
+
+          {!data?.phoneClicks?.length && !data?.byProduct?.length && !data?.appProducts?.length &&
+            <p style={{ color: "#999", textAlign: "center", padding: 40 }}>Немає даних. Коли відвідувачі почнуть взаємодіяти з сайтом, статистика з'явиться тут.</p>
+          }
+        </C>
+      </>}
+
     </div>
   );
 }
