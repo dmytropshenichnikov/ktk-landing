@@ -235,20 +235,22 @@ export default function AnalyticsPage() {
           </div>
         </C>
 
-        {/* Графік по днях */}
+          {/* Графік по днях */}
         <C mb={16}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Активність по днях</h2>
             <span style={{ fontSize: 12, color: "#aaa" }}>макс: {maxDay}</span>
           </div>
-          <div style={{ position: "relative", height: 200, display: "flex", alignItems: "flex-end", gap: 3, paddingBottom: 22 }}>
+          <div style={{ position: "relative", height: 220, display: "flex", alignItems: "flex-end", gap: 3, paddingBottom: 22 }}>
             {daily.map((d, i) => {
               const t = types.reduce((s, et) => s + ((d as any)[et] || 0), 0);
               const p = pct(t, maxDay);
+              const barH = Math.max(p, 6); // мінімум 6% щоб було видно
               return (
                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", position: "relative" }}
                   title={`${d.day}: ${t}`}>
-                  <div style={{ width: "100%", maxWidth: 32, height: `${p}%`, background: "linear-gradient(180deg,#4ade80,#16a34a)", borderRadius: "4px 4px 0 0", minHeight: t > 0 ? 4 : 0, transition: "height .3s" }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#333", marginBottom: 2 }}>{t}</span>
+                  <div style={{ width: "100%", maxWidth: 32, height: `${barH}%`, background: t > 0 ? "linear-gradient(180deg,#4ade80,#16a34a)" : "#e5e7eb", borderRadius: "4px 4px 0 0", minHeight: 4, transition: "height .3s" }} />
                   {daily.length <= 31 && <span style={{ fontSize: 8, color: "#bbb", marginTop: 4 }}>{fmt(d.day)}</span>}
                 </div>
               );
@@ -269,13 +271,15 @@ export default function AnalyticsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
           <C>
             <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600 }}>Активність по годинах</h2>
-            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 120 }}>
+            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 150 }}>
               {Array.from({ length: 24 }, (_, h) => {
                 const p = pct(hrs[h], maxHr);
+                const barH = Math.max(p, 5);
                 return (
                   <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${h}:00 — ${hrs[h]}`}>
-                    <div style={{ width: "100%", height: `${p}%`, background: hrs[h] > 0 ? `rgba(37,99,235,${.15 + p/100 * .85})` : "#f3f4f6", borderRadius: "3px 3px 0 0", minHeight: hrs[h] > 0 ? 3 : 0 }} />
-                    <span style={{ fontSize: 7, color: "#bbb", marginTop: 2 }}>{h}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: "#555", marginBottom: 1 }}>{hrs[h]}</span>
+                    <div style={{ width: "100%", height: `${barH}%`, background: hrs[h] > 0 ? `rgba(37,99,235,${.15 + p/100 * .85})` : "#f3f4f6", borderRadius: "3px 3px 0 0", minHeight: 3 }} />
+                    <span style={{ fontSize: 8, color: "#bbb", marginTop: 2 }}>{h}</span>
                   </div>
                 );
               })}
@@ -285,14 +289,15 @@ export default function AnalyticsPage() {
           {/* Дні тижня */}
           <C>
             <h2 style={{ margin: "0 0 12px", fontSize: 15, fontWeight: 600 }}>Активність по днях тижня</h2>
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 130 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 160 }}>
               {Array.from({ length: 7 }, (_, d) => {
                 const p = pct(dows[d], maxDow);
+                const barH = Math.max(p, 6);
                 return (
                   <div key={d} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${DAYS_FULL[d]}: ${dows[d]}`}>
-                    <div style={{ width: "100%", maxWidth: 44, height: `${p}%`, background: "linear-gradient(180deg,#a78bfa,#7c3aed)", borderRadius: "6px 6px 0 0", minHeight: dows[d] > 0 ? 4 : 0 }} />
-                    <span style={{ fontSize: 10, color: "#888", marginTop: 6, fontWeight: 600 }}>{DAYS_SHORT[d]}</span>
-                    <span style={{ fontSize: 11, color: "#333", fontWeight: 600 }}>{dows[d]}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: "#333", marginBottom: 2 }}>{dows[d]}</span>
+                    <div style={{ width: "100%", maxWidth: 44, height: `${barH}%`, background: dows[d] > 0 ? "linear-gradient(180deg,#a78bfa,#7c3aed)" : "#e5e7eb", borderRadius: "6px 6px 0 0", minHeight: 4 }} />
+                    <span style={{ fontSize: 11, color: "#888", marginTop: 6, fontWeight: 600 }}>{DAYS_SHORT[d]}</span>
                   </div>
                 );
               })}
@@ -424,16 +429,18 @@ export default function AnalyticsPage() {
 
           {data?.appsByDay && data.appsByDay.length > 0 && <>
             <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Динаміка заявок по днях</h3>
-            <div style={{ height: 180, display: "flex", alignItems: "flex-end", gap: 4, paddingBottom: 24 }}>
+            <div style={{ height: 200, display: "flex", alignItems: "flex-end", gap: 4, paddingBottom: 24 }}>
               {data.appsByDay.map((it, i) => {
                 const mx = Math.max(...data.appsByDay.map(a => a.count));
                 const p = pct(it.count, mx);
+                const barH = Math.max(p, 6);
                 return (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }} title={`${it.day}: ${it.count}`}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#333", marginBottom: 2 }}>{it.count}</span>
                     <div style={{
-                      width: "100%", maxWidth: 36, height: `${p}%`,
-                      background: "linear-gradient(180deg, #22d3ee, #0891b2)",
-                      borderRadius: "4px 4px 0 0", minHeight: it.count > 0 ? 4 : 0,
+                      width: "100%", maxWidth: 36, height: `${barH}%`,
+                      background: it.count > 0 ? "linear-gradient(180deg, #22d3ee, #0891b2)" : "#e5e7eb",
+                      borderRadius: "4px 4px 0 0", minHeight: 4,
                     }} />
                     <span style={{ fontSize: 9, color: "#999", marginTop: 4, whiteSpace: "nowrap" }}>
                       {it.day?.slice(5)}
