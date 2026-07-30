@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
+import { ChangeEvent, FormEvent, useState, useEffect, useCallback } from 'react';
 
 import styles from '@/app/page.module.css';
 import { IconPhone, IconViber, IconWhatsApp, IconCheck, IconStar, IconQuote, IconMail, IconUser, IconTruck, IconPackage, IconBuilding, IconHammer, IconCrane, IconArrowRight, IconSend } from '@/components/icons';
@@ -99,6 +99,31 @@ export default function LandingPage({ initialData }: { initialData: any }) {
     whatsapp: `https://wa.me/${contacts.phoneRaw.replace(/[^0-9]/g, '')}`,
   };
 
+  // 📊 Analytics tracking
+  const trackEvent = useCallback(async (eventType: string, eventData?: string) => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      await fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_type: eventType,
+          event_data: eventData || '',
+          page_url: window.location.href,
+          referrer: document.referrer || '',
+          utm_source: params.get('utm_source') || '',
+          utm_medium: params.get('utm_medium') || '',
+          utm_campaign: params.get('utm_campaign') || '',
+        }),
+      });
+    } catch {}
+  }, []);
+
+  // Track page view on mount
+  useEffect(() => {
+    trackEvent('page_view');
+  }, [trackEvent]);
+
   // Set initial product when data loads
   useEffect(() => {
     if (allProducts.length > 0 && !formData.product) {
@@ -144,6 +169,9 @@ export default function LandingPage({ initialData }: { initialData: any }) {
       }
 
       setStatus('success');
+      // Track application submission
+      trackEvent('submit_application', formData.product);
+      // Google Ads conversion
       const gtag = (window as any).gtag;
       if (gtag) {
         gtag('event', 'conversion', { 'send_to': 'AW-18199730227/GCUlCImBpswcELOwp-ZD' });
@@ -155,11 +183,20 @@ export default function LandingPage({ initialData }: { initialData: any }) {
   };
 
   const handlePhoneClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Track the click
+    const phoneNumber = e.currentTarget.textContent?.trim() || e.currentTarget.href;
+    trackEvent('click_phone', phoneNumber.replace('tel:', ''));
+
+    // Google Ads conversion
     const gtagFn = (window as any).gtag_report_conversion;
     if (gtagFn) {
       e.preventDefault();
       gtagFn(e.currentTarget.href);
     }
+  };
+
+  const handleMessengerClick = (type: 'viber' | 'whatsapp') => {
+    trackEvent(`click_${type}`);
   };
 
   return (
@@ -213,10 +250,10 @@ export default function LandingPage({ initialData }: { initialData: any }) {
                 <div className={styles.heroPhones}>
                   <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
                   <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
-                  <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+                  <a href={socialLinks.viber} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_viber')}>
                     Viber
                   </a>
-                  <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                  <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_whatsapp')}>
                     WhatsApp
                   </a>
                 </div>
@@ -306,7 +343,7 @@ export default function LandingPage({ initialData }: { initialData: any }) {
                     <p className={styles.productSpec}>{product.spec}</p>
                     <p className={styles.productPrice}>{product.priceFrom}</p>
                     <p className={styles.productDescription}>{product.description}</p>
-                    <a className={styles.cardLink} href="#contact-form">
+                    <a className={styles.cardLink} href="#contact-form" onClick={() => trackEvent('click_product', `${product.name} (${product.spec})`)}>
                       Уточнити ціну
                     </a>
                   </div>
@@ -333,7 +370,7 @@ export default function LandingPage({ initialData }: { initialData: any }) {
                     {service.meta ? <p className={styles.serviceMeta}>{service.meta}</p> : null}
                     <h3>{service.name}</h3>
                     <p>{service.details}</p>
-                    <a className={styles.cardLink} href="#contact-form">
+                    <a className={styles.cardLink} href="#contact-form" onClick={() => trackEvent('click_service', service.name)}>
                       Замовити послугу
                     </a>
                   </div>
@@ -380,10 +417,10 @@ export default function LandingPage({ initialData }: { initialData: any }) {
               <div className={styles.contactButtons}>
                 <a href={socialLinks.phone} onClick={handlePhoneClick}>{contacts.phoneDisplay}</a>
                 <a href={socialLinks.phone2} onClick={handlePhoneClick}>{contacts.phoneDisplay2}</a>
-                <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+                <a href={socialLinks.viber} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_viber')}>
                   Viber
                 </a>
-                <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+                <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_whatsapp')}>
                   WhatsApp
                 </a>
               </div>
@@ -433,10 +470,10 @@ export default function LandingPage({ initialData }: { initialData: any }) {
         <button onClick={() => setShowPhoneMenu(true)} className={styles.dockButton}>
           Телефон
         </button>
-        <a href={socialLinks.viber} target="_blank" rel="noreferrer">
+        <a href={socialLinks.viber} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_viber')}>
           Viber
         </a>
-        <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer">
+        <a href={socialLinks.whatsapp} target="_blank" rel="noreferrer" onClick={() => trackEvent('click_whatsapp')}>
           WhatsApp
         </a>
       </div>

@@ -56,6 +56,23 @@ export async function GET() {
     )`);
     await sql(`CREATE UNIQUE INDEX IF NOT EXISTS reviews_name_text_idx ON reviews (name, text)`).catch(() => {});
 
+    // Analytics events table
+    await sql(`CREATE TABLE IF NOT EXISTS analytics_events (
+      id SERIAL PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      event_data TEXT DEFAULT '',
+      page_url TEXT DEFAULT '',
+      referrer TEXT DEFAULT '',
+      utm_source TEXT DEFAULT '',
+      utm_medium TEXT DEFAULT '',
+      utm_campaign TEXT DEFAULT '',
+      user_agent TEXT DEFAULT '',
+      ip_address TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await sql(`CREATE INDEX IF NOT EXISTS idx_analytics_event_type ON analytics_events (event_type)`);
+    await sql(`CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics_events (created_at)`);
+
     // Insert default admin if not exists
     const adminEmail = process.env.ADMIN_EMAIL || "admin@ktk.com.ua";
     const adminPass = process.env.ADMIN_PASSWORD || "ktkadmin2026";
