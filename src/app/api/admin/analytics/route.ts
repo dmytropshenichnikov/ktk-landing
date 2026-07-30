@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
     // Total events count by type
     const byType = await q(`
-      SELECT event_type, COUNT(*) as count
+      SELECT event_type, COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY event_type
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 
     // Events by day
     const byDay = await q(`
-      SELECT DATE(created_at) as day, event_type, COUNT(*) as count
+      SELECT DATE(created_at) as day, event_type, COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY DATE(created_at), event_type
@@ -73,7 +73,7 @@ export async function GET(request: Request) {
 
     // Events by hour of day (0-23) - for heatmap
     const byHourOfDay = await q(`
-      SELECT EXTRACT(HOUR FROM created_at)::int as hour, event_type, COUNT(*) as count
+      SELECT EXTRACT(HOUR FROM created_at)::int as hour, event_type, COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY EXTRACT(HOUR FROM created_at), event_type
@@ -84,7 +84,7 @@ export async function GET(request: Request) {
     const byDayOfWeek = await q(`
       SELECT EXTRACT(DOW FROM created_at)::int as dow, 
              TO_CHAR(created_at, 'Day') as day_name,
-             event_type, COUNT(*) as count
+             event_type, COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter} ${typeFilter}
       GROUP BY EXTRACT(DOW FROM created_at), TO_CHAR(created_at, 'Day'), event_type
@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
     // Product/Service click stats
     const byProduct = await q(`
-      SELECT event_data, COUNT(*) as count
+      SELECT event_data, COUNT(*)::int as count
       FROM analytics_events
       WHERE event_type IN ('click_product', 'click_service') ${dateFilter}
       GROUP BY event_data
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
 
     // Application product stats
     const appProducts = await q(`
-      SELECT product, COUNT(*) as count
+      SELECT product, COUNT(*)::int as count
       FROM applications
       WHERE 1=1 ${dateFilter.replaceAll('created_at', 'applications.created_at')}
       GROUP BY product
@@ -113,7 +113,7 @@ export async function GET(request: Request) {
 
     // Application status stats
     const appStatuses = await q(`
-      SELECT status, COUNT(*) as count
+      SELECT status, COUNT(*)::int as count
       FROM applications
       GROUP BY status
       ORDER BY count DESC
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
 
     // Applications by day
     const appsByDay = await q(`
-      SELECT DATE(created_at) as day, COUNT(*) as count
+      SELECT DATE(created_at) as day, COUNT(*)::int as count
       FROM applications
       WHERE 1=1 ${dateFilter.replaceAll('created_at', 'applications.created_at')}
       GROUP BY DATE(created_at)
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
 
     // Phone clicks stats
     const phoneClicks = await q(`
-      SELECT event_data, COUNT(*) as count
+      SELECT event_data, COUNT(*)::int as count
       FROM analytics_events
       WHERE event_type = 'click_phone' ${dateFilter}
       GROUP BY event_data
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
         COALESCE(NULLIF(utm_source, ''), 'direct') as source,
         COALESCE(NULLIF(utm_medium, ''), 'none') as medium,
         COALESCE(NULLIF(utm_campaign, ''), '-') as campaign,
-        COUNT(*) as count
+        COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter}
       GROUP BY source, medium, campaign
@@ -155,7 +155,7 @@ export async function GET(request: Request) {
     const topReferrers = await q(`
       SELECT 
         COALESCE(NULLIF(referrer, ''), '(direct)') as referrer,
-        COUNT(*) as count
+        COUNT(*)::int as count
       FROM analytics_events
       WHERE 1=1 ${dateFilter}
       GROUP BY referrer
@@ -165,7 +165,7 @@ export async function GET(request: Request) {
 
     // Page views stats
     const pageViews = await q(`
-      SELECT page_url, COUNT(*) as count
+      SELECT page_url, COUNT(*)::int as count
       FROM analytics_events
       WHERE event_type = 'page_view' ${dateFilter}
       GROUP BY page_url
@@ -185,11 +185,11 @@ export async function GET(request: Request) {
 
     // Weekly comparison (this week vs last week)
     const thisWeek = await q(`
-      SELECT COUNT(*) as count FROM analytics_events
+      SELECT COUNT(*)::int as count FROM analytics_events
       WHERE created_at >= DATE_TRUNC('week', NOW()) AND created_at < NOW()
     `);
     const lastWeek = await q(`
-      SELECT COUNT(*) as count FROM analytics_events
+      SELECT COUNT(*)::int as count FROM analytics_events
       WHERE created_at >= DATE_TRUNC('week', NOW()) - INTERVAL '7 days'
         AND created_at < DATE_TRUNC('week', NOW())
     `);

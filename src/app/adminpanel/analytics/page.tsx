@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
     const m: Record<string, Record<string, number>> = {};
     for (const e of data.byDay) {
       if (!m[e.day]) m[e.day] = {};
-      m[e.day][e.event_type] = (m[e.day][e.event_type] || 0) + e.count;
+      m[e.day][e.event_type] = (m[e.day][e.event_type] || 0) + Number(e.count);
     }
     return Object.entries(m).map(([d, v]) => ({ day: d, ...v })).sort((a, b) => a.day.localeCompare(b.day));
   }, [data]);
@@ -102,13 +102,13 @@ export default function AnalyticsPage() {
   /* годинна теплова карта */
   const hrs: Record<number, number> = {};
   for (let h = 0; h < 24; h++) hrs[h] = 0;
-  if (data?.byHourOfDay) for (const e of data.byHourOfDay) hrs[e.hour] = (hrs[e.hour] || 0) + e.count;
+  if (data?.byHourOfDay) for (const e of data.byHourOfDay) hrs[e.hour] = (hrs[e.hour] || 0) + Number(e.count);
   const maxHr = Math.max(1, ...Object.values(hrs));
 
   /* дні тижня */
   const dows: Record<number, number> = {};
   for (let d = 0; d < 7; d++) dows[d] = 0;
-  if (data?.byDayOfWeek) for (const e of data.byDayOfWeek) dows[e.dow] = (dows[e.dow] || 0) + e.count;
+  if (data?.byDayOfWeek) for (const e of data.byDayOfWeek) dows[e.dow] = (dows[e.dow] || 0) + Number(e.count);
   const maxDow = Math.max(1, ...Object.values(dows));
 
   const wkChg = data?.lastWeek ? Math.round(((data.thisWeek - data.lastWeek) / data.lastWeek) * 100) : 0;
@@ -396,7 +396,7 @@ export default function AnalyticsPage() {
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Статуси</h3>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 24 }}>
             {data?.appStatuses.map(it => {
-              const t = data.appStatuses.reduce((s, x) => s + x.count, 0);
+              const t = data.appStatuses.reduce((s, x) => s + Number(x.count), 0);
               const sc: Record<string, string> = { new: "#2563eb", read: "#7c3aed", contacted: "#d97706", sent: "#16a34a", completed: "#059669", cancelled: "#dc2626" };
               const sl: Record<string, string> = { new: "Нова", read: "Прочитана", contacted: "Зв'язались", sent: "Відправлено", completed: "Завершено", cancelled: "Скасовано" };
               return (
