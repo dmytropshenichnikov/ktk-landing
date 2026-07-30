@@ -66,6 +66,24 @@ export default function AnalyticsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  /* завантаження CSV з авторизацією */
+  const downloadCsv = useCallback(async (type: string) => {
+    try {
+      const t = token || "";
+      const r = await fetch(`/api/admin/analytics/export?type=${type}&token=${encodeURIComponent(t)}`);
+      if (!r.ok) return alert("Помилка завантаження");
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = type === "events" ? "analytics_events.csv" : "applications.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Помилка завантаження");
+    }
+  }, [token]);
+
   /* агрегація для графіків */
   const agg = useCallback(() => {
     if (!data?.byDay) return [];
@@ -285,8 +303,8 @@ export default function AnalyticsPage() {
         {/* Експорт */}
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <a href="/adminpanel/applications" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Всі заявки →</a>
-          <a href="/api/admin/analytics/export?type=events" target="_blank" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (події)</a>
-          <a href="/api/admin/analytics/export?type=applications" target="_blank" style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", textDecoration: "none", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (заявки)</a>
+          <button onClick={() => downloadCsv("events")} style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", cursor: "pointer", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (події)</button>
+          <button onClick={() => downloadCsv("applications")} style={{ padding: "10px 20px", borderRadius: 8, background: "#fff", color: "#333", cursor: "pointer", fontSize: 13, fontWeight: 500, border: "1px solid #e5e7eb" }}>Завантажити CSV (заявки)</button>
         </div>
       </>}
 
@@ -297,7 +315,7 @@ export default function AnalyticsPage() {
         <C>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Детальна статистика подій</h2>
-            <a href="/api/admin/analytics/export?type=events" target="_blank" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>CSV</a>
+            <button onClick={() => downloadCsv("events")} style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", cursor: "pointer", border: "none", fontSize: 12, fontWeight: 600 }}>CSV</button>
           </div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -366,7 +384,7 @@ export default function AnalyticsPage() {
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Аналітика заявок</h2>
             <div style={{ display: "flex", gap: 8 }}>              
               <a href="/adminpanel/applications" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>Всі заявки →</a>
-              <a href="/api/admin/analytics/export?type=applications" target="_blank" style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>CSV</a>
+              <button onClick={() => downloadCsv("applications")} style={{ padding: "8px 16px", borderRadius: 6, background: "#f3f4f6", color: "#333", cursor: "pointer", border: "none", fontSize: 12, fontWeight: 600 }}>CSV</button>
             </div>
           </div>
 

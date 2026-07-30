@@ -2,14 +2,20 @@ import { NextResponse } from "next/server";
 import { verifyToken, getAuthToken } from "@/lib/auth";
 import sql from "@/lib/db";
 
-function checkAuth(request: Request): boolean {
-  const token = getAuthToken(request);
-  if (!token) return false;
-  return !!verifyToken(token);
+function checkAuth(request: Request): string | null {
+  let token = getAuthToken(request);
+  // Fallback: accept token as query parameter (for direct links)
+  if (!token) {
+    const url = new URL(request.url);
+    token = url.searchParams.get("token") || null;
+  }
+  if (!token) return null;
+  return verifyToken(token);
 }
 
 export async function GET(request: Request) {
-  if (!checkAuth(request)) {
+  const auth = checkAuth(request);
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
