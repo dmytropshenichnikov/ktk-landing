@@ -47,5 +47,40 @@ export async function GET() {
     results.push("analytics_events error: " + e.message);
   }
 
+  // Create landing_pages table
+  try {
+    await sql(`CREATE TABLE IF NOT EXISTS landing_pages (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      is_active BOOLEAN DEFAULT true,
+      hero_title TEXT DEFAULT '',
+      hero_subtitle TEXT DEFAULT '',
+      hero_label TEXT DEFAULT '',
+      hero_points TEXT[] DEFAULT '{}',
+      form_title TEXT DEFAULT '',
+      form_subtitle TEXT DEFAULT '',
+      form_button TEXT DEFAULT '',
+      form_success TEXT DEFAULT '',
+      section_products_label TEXT DEFAULT '',
+      section_products_title TEXT DEFAULT '',
+      section_services_label TEXT DEFAULT '',
+      section_reviews_label TEXT DEFAULT '',
+      section_reviews_title TEXT DEFAULT '',
+      contact_strip_label TEXT DEFAULT '',
+      contact_strip_title TEXT DEFAULT '',
+      contacts_label TEXT DEFAULT '',
+      contacts_title TEXT DEFAULT '',
+      custom_css TEXT DEFAULT '',
+      custom_html TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    results.push("landing_pages table created");
+  } catch (e: any) {
+    results.push("landing_pages error: " + e.message);
+  }
+
   return NextResponse.json({ success: true, results });
 }
